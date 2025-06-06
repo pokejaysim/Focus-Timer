@@ -3,7 +3,10 @@
     "allow": [
       "Bash(claude --version)",
       "Bash(source:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(diff:*)",
+      "Bash(rm:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }
