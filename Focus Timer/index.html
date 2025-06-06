@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Plant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1 class="app-title">Start planting today!</h1>
+            
+            <!-- Plant Display -->
+            <div class="plant-circle">
+                <div class="plant-stage-container">
+                    <div class="plant-emoji" id="plant-emoji" data-stage="0">
+                        <!-- Stage 0: Empty pot with soil -->
+                        <div class="stage stage-0">🪴</div>
+                        <!-- Stage 1: Sprout -->
+                        <div class="stage stage-1">🌱</div>
+                        <!-- Stage 2: Small plant -->
+                        <div class="stage stage-2">🌿</div>
+                        <!-- Stage 3: Fuller plant -->
+                        <div class="stage stage-3">🪴</div>
+                        <!-- Stage 4: Young tree -->
+                        <div class="stage stage-4">🌲</div>
+                        <!-- Stage 5: Full tree -->
+                        <div class="stage stage-5">🌳</div>
+                        <!-- Stage 6: Majestic tree -->
+                        <div class="stage stage-6">🌴</div>
+                    </div>
+                </div>
+                <div class="stage-indicator" id="stage-indicator">Stage 0/6</div>
+            </div>
+            
+            <!-- Total Focus Time Display -->
+            <div class="total-focus-display" id="total-focus-display">
+                Total Focus Time: <span id="total-hours">0</span> hours
+            </div>
+            
+            <!-- Timer Settings -->
+            <div class="timer-settings">
+                <label for="minutes-input">Focus time:</label>
+                <input type="number" id="minutes-input" min="1" max="120" value="25">
+                <span>minutes</span>
+            </div>
+            
+            <!-- Preset Buttons -->
+            <div class="preset-buttons">
+                <button class="preset-btn" data-minutes="25">25m</button>
+                <button class="preset-btn" data-minutes="45">45m</button>
+                <button class="preset-btn" data-minutes="60">1h</button>
+                <button class="preset-btn" data-minutes="120">2h</button>
+            </div>
+            
+            <!-- Timer Display -->
+            <div class="timer-display" id="timer-display">25:00</div>
+            
+            <!-- Start Button -->
+            <button class="start-button" id="start-btn">Plant</button>
+            
+            <!-- Hidden Controls -->
+            <div class="hidden-controls" id="hidden-controls">
+                <button id="pause-btn" class="control-btn">Pause</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            
+            <!-- Celebration Message -->
+            <div class="celebration-message" id="celebration-message">
+                <div class="celebration-text">Your plant grew! 🎉</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="app-footer">
+        <p>App by J.Sim</p>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
