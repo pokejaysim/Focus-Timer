@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(claude --version)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }
