@@ -27,122 +27,138 @@ body {
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.8);
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.9);
     border: 2px solid rgba(139, 69, 19, 0.2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s;
-    font-size: 16px;
-    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 18px;
     color: #2C3E50;
     z-index: 100;
     backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .info-button:hover {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 1);
     transform: scale(1.1);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     border-color: #8B4513;
 }
 
-/* Modal Overlay */
-.modal-overlay {
+/* Body class when sidebar is open */
+body.sidebar-open {
+    overflow: hidden;
+}
+
+body.sidebar-open .app-container {
+    filter: brightness(0.7);
+    transition: filter 0.3s ease;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     z-index: 2000;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(3px);
 }
 
-.modal-overlay.show {
+.sidebar-overlay.show {
     opacity: 1;
     visibility: visible;
 }
 
-/* Modal Content */
-.modal-content {
+/* Sidebar */
+.sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 400px;
+    height: 100vh;
     background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 25px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(139, 69, 19, 0.2);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
     overflow-y: auto;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    transform: scale(0.9);
-    transition: all 0.3s;
-    position: relative;
-    border: 2px solid #8FBC8F;
-    backdrop-filter: blur(10px);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
 }
 
-.modal-overlay.show .modal-content {
-    transform: scale(1);
+.sidebar-overlay.show .sidebar {
+    transform: translateX(0);
 }
 
-/* Close Button */
-.close-button {
+/* Sidebar Close Button */
+.sidebar-close {
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 30px;
-    height: 30px;
-    background: transparent;
-    border: 2px solid rgba(139, 69, 19, 0.3);
+    width: 32px;
+    height: 32px;
+    background: rgba(139, 69, 19, 0.1);
+    border: 2px solid rgba(139, 69, 19, 0.2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     font-size: 18px;
     color: #2C3E50;
 }
 
-.close-button:hover {
-    background: rgba(139, 69, 19, 0.1);
+.sidebar-close:hover {
+    background: rgba(139, 69, 19, 0.2);
     border-color: #8B4513;
     transform: rotate(90deg);
 }
 
-/* Modal Title */
-.modal-title {
-    font-size: 28px;
+/* Sidebar Content */
+.sidebar-content {
+    padding: 60px 30px 30px 30px;
+    height: 100%;
+}
+
+/* Sidebar Title */
+.sidebar-title {
+    font-size: 32px;
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     color: #2C3E50;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    border-bottom: 2px solid rgba(139, 69, 19, 0.1);
+    padding-bottom: 20px;
 }
 
-/* Modal Text */
-.modal-text {
+/* Sidebar Text */
+.sidebar-text {
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.7;
     color: #2C3E50;
 }
 
-.modal-text p {
-    margin-bottom: 15px;
+.sidebar-text p {
+    margin-bottom: 20px;
+    opacity: 0.9;
 }
 
-.modal-text p:last-child {
+.sidebar-text p:last-child {
     margin-bottom: 0;
 }
 
@@ -520,16 +536,27 @@ body {
         font-size: 14px;
     }
 
-    .modal-content {
-        padding: 30px;
-        width: 95%;
+    .sidebar {
+        max-width: 100%;
+        width: 100%;
     }
 
-    .modal-title {
-        font-size: 24px;
+    .sidebar-content {
+        padding: 50px 20px 20px 20px;
     }
 
-    .modal-text {
-        font-size: 14px;
+    .sidebar-title {
+        font-size: 26px;
+        margin-bottom: 20px;
+    }
+
+    .sidebar-text {
+        font-size: 15px;
+    }
+
+    .info-button {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
     }
 }
