@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Tree</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #8FBC8F 0%, #B8E6B8 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #2C3E50;
+        }
+
+        .app-container {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: transparent;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Info Button */
+        .info-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(139, 69, 19, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-weight: 600;
+            color: #2C3E50;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-button:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            border-color: #8B4513;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 25px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: all 0.3s;
+            position: relative;
+            border: 2px solid #8FBC8F;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        /* Close Button */
+        .close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            border: 2px solid rgba(139, 69, 19, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 18px;
+            color: #2C3E50;
+        }
+
+        .close-button:hover {
+            background: rgba(139, 69, 19, 0.1);
+            border-color: #8B4513;
+            transform: rotate(90deg);
+        }
+
+        /* Modal Title */
+        .modal-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2C3E50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Modal Text */
+        .modal-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #2C3E50;
+        }
+
+        .modal-text p {
+            margin-bottom: 15px;
+        }
+
+        .modal-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 20px 20px;
+            justify-content: center;
+        }
+
+        .app-title {
+            font-size: 32px;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 50px;
+            color: #2C3E50;
+        }
+
+        /* Plant Circle */
+        .plant-circle {
+            width: 280px;
+            height: 280px;
+            background: linear-gradient(145deg, #6B8E6B 0%, #556B55 50%, #4A5D4A 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .plant-circle::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            width: 40px;
+            height: 40px;
+            background: #8FBC8F;
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        .plant-stage-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 60px;
+        }
+
+        /* Emoji Plant System */
+        .plant-emoji {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            transform-origin: bottom center;
+        }
+
+        .stage {
+            font-size: 120px;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s ease;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+        }
+
+        /* Show only the current stage */
+        .plant-emoji[data-stage="0"] .stage-0,
+        .plant-emoji[data-stage="1"] .stage-1,
+        .plant-emoji[data-stage="2"] .stage-2,
+        .plant-emoji[data-stage="3"] .stage-3,
+        .plant-emoji[data-stage="4"] .stage-4,
+        .plant-emoji[data-stage="5"] .stage-5,
+        .plant-emoji[data-stage="6"] .stage-6 {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Stage indicator */
+        .stage-indicator {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            color: #2C3E50;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        /* Celebration Message */
+        .celebration-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #2C3E50;
+            padding: 20px 40px;
+            border-radius: 25px;
+            font-size: 24px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 1000;
+            border: 2px solid #8FBC8F;
+        }
+
+        .celebration-message.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .celebration-text {
+            text-align: center;
+        }
+
+        /* Timer Display */
+        .timer-display {
+            font-size: 80px;
+            font-weight: 300;
+            color: #2C3E50;
+            margin-bottom: 40px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+
+        /* Start Button */
+        .start-button {
+            background: #A0522D;
+            color: #F8F5F0;
+            border: none;
+            padding: 20px 80px;
+            font-size: 28px;
+            font-weight: 500;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            background: #8B4513;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+        }
+
+        .start-button:disabled {
+            background: rgba(160, 82, 45, 0.5);
+            cursor: not-allowed;
+        }
+
+        /* Hidden Controls */
+        .hidden-controls {
+            display: none;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .hidden-controls.active {
+            display: flex;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.8);
+            color: #2C3E50;
+            border: 2px solid rgba(139, 69, 19, 0.3);
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: #8B4513;
+        }
+
+        /* Timer Settings */
+        .timer-settings {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 12px 24px;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .timer-settings label {
+            font-size: 16px;
+            color: #2C3E50;
+            font-weight: 400;
+        }
+
+        .timer-settings input {
+            width: 80px;
+            padding: 10px 16px;
+            border: 2px solid rgba(139, 69, 19, 0.3);
+            border-radius: 15px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            background: white;
+            color: #2C3E50;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+
+        .timer-settings input:focus {
+            outline: none;
+            border-color: #A0522D;
+            background: white;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.1);
+        }
+
+        .timer-settings span {
+            font-size: 16px;
+            color: #2C3E50;
+            font-weight: 400;
+        }
+
+        /* Total Focus Display */
+        .total-focus-display {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 16px 32px;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 500;
+            color: #2C3E50;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .total-focus-display #total-hours {
+            font-weight: 700;
+            font-size: 20px;
+            color: #2C3E50;
+        }
+
+        /* Preset Buttons */
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.8);
+            color: #2C3E50;
+            border: 2px solid rgba(139, 69, 19, 0.2);
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            border-color: #8B4513;
+        }
+
+        .preset-btn:active {
+            transform: translateY(0);
+        }
+
+        .preset-btn.active {
+            background: #A0522D;
+            color: white;
+            border-color: #A0522D;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes growthPulse {
+            0% { transform: translateX(-50%) scale(1); }
+            25% { transform: translateX(-50%) scale(1.1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+            75% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        /* Footer */
+        .app-footer {
+            text-align: center;
+            padding: 20px;
+            color: #2C3E50;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
+        .app-footer p {
+            margin: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .app-container {
+                max-width: 100%;
+            }
+            
+            .app-title {
+                font-size: 24px;
+            }
+            
+            .plant-circle {
+                width: 240px;
+                height: 240px;
+            }
+            
+            .timer-display {
+                font-size: 60px;
+            }
+            
+            .start-button {
+                padding: 18px 60px;
+                font-size: 24px;
+            }
+            
+            .total-focus-display {
+                font-size: 16px;
+                padding: 12px 24px;
+            }
+            
+            .preset-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .preset-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            .modal-content {
+                padding: 30px;
+                width: 95%;
+            }
+
+            .modal-title {
+                font-size: 24px;
+            }
+
+            .modal-text {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Info Button -->
+        <button class="info-button" id="info-btn" aria-label="About Timer Tree">i</button>
+
+        <!-- Modal -->
+        <div class="modal-overlay" id="modal-overlay">
+            <div class="modal-content">
+                <button class="close-button" id="close-btn" aria-label="Close">×</button>
+                <h2 class="modal-title">🌱 Timer Tree</h2>
+                <div class="modal-text">
+                    <p>Timer Tree is a simple and calming focus timer that lets you grow a tree as you stay on task. The idea is simple: the longer you focus, the more your tree grows. Step away too soon, and the growth resets — stay with it, and watch your focus bear fruit (well, leaves).</p>
+                    <p>Great for study sessions, deep work, or mindful breaks — Timer Tree brings a gentle visual reward to your concentration time.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1 class="app-title">Start planting today!</h1>
+            
+            <!-- Plant Display -->
+            <div class="plant-circle">
+                <div class="plant-stage-container">
+                    <div class="plant-emoji" id="plant-emoji" data-stage="0">
+                        <!-- Stage 0: Empty pot with soil -->
+                        <div class="stage stage-0">🪴</div>
+                        <!-- Stage 1: Sprout -->
+                        <div class="stage stage-1">🌱</div>
+                        <!-- Stage 2: Small plant -->
+                        <div class="stage stage-2">🌿</div>
+                        <!-- Stage 3: Fuller plant -->
+                        <div class="stage stage-3">🪴</div>
+                        <!-- Stage 4: Young tree -->
+                        <div class="stage stage-4">🌲</div>
+                        <!-- Stage 5: Full tree -->
+                        <div class="stage stage-5">🌳</div>
+                        <!-- Stage 6: Majestic tree -->
+                        <div class="stage stage-6">🌴</div>
+                    </div>
+                </div>
+                <div class="stage-indicator" id="stage-indicator">Stage 0/6</div>
+            </div>
+            
+            <!-- Total Focus Time Display -->
+            <div class="total-focus-display" id="total-focus-display">
+                Total Focus Time: <span id="total-hours">0</span> hours
+            </div>
+            
+            <!-- Timer Settings -->
+            <div class="timer-settings">
+                <label for="minutes-input">Focus time:</label>
+                <input type="number" id="minutes-input" min="1" max="120" value="25">
+                <span>minutes</span>
+            </div>
+            
+            <!-- Preset Buttons -->
+            <div class="preset-buttons">
+                <button class="preset-btn" data-minutes="25">25m</button>
+                <button class="preset-btn" data-minutes="45">45m</button>
+                <button class="preset-btn" data-minutes="60">1h</button>
+                <button class="preset-btn" data-minutes="120">2h</button>
+            </div>
+            
+            <!-- Timer Display -->
+            <div class="timer-display" id="timer-display">25:00</div>
+            
+            <!-- Start Button -->
+            <button class="start-button" id="start-btn">Plant</button>
+            
+            <!-- Hidden Controls -->
+            <div class="hidden-controls" id="hidden-controls">
+                <button id="pause-btn" class="control-btn">Pause</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+            
+            <!-- Celebration Message -->
+            <div class="celebration-message" id="celebration-message">
+                <div class="celebration-text">Your plant grew! 🎉</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="app-footer">
+        <p>App by J.Sim</p>
+    </footer>
+    
+    <script>
+        class FocusTimer {
+            constructor() {
+                // Timer state using timestamps for background resilience
+                this.startTime = null;
+                this.pausedTime = null;
+                this.totalPausedDuration = 0;
+                this.duration = 0; // Total duration in milliseconds
+                
+                this.isRunning = false;
+                this.isPaused = false;
+                this.timer = null;
+                
+                this.plantStage = parseInt(localStorage.getItem('plantStage') || '0');
+                this.totalFocusHours = parseFloat(localStorage.getItem('totalFocusHours') || '0');
+                
+                this.minutesInput = document.getElementById('minutes-input');
+                this.timerDisplay = document.getElementById('timer-display');
+                this.startBtn = document.getElementById('start-btn');
+                this.pauseBtn = document.getElementById('pause-btn');
+                this.resetBtn = document.getElementById('reset-btn');
+                this.plantEmoji = document.getElementById('plant-emoji');
+                this.stageIndicator = document.getElementById('stage-indicator');
+                this.celebrationMessage = document.getElementById('celebration-message');
+                this.hiddenControls = document.getElementById('hidden-controls');
+                this.totalHoursDisplay = document.getElementById('total-hours');
+                this.presetButtons = document.querySelectorAll('.preset-btn');
+                
+                // Initialize timer with input value
+                this.minutes = parseInt(this.minutesInput.value) || 25;
+                this.duration = this.minutes * 60 * 1000; // Convert to milliseconds
+                
+                this.initEventListeners();
+                this.updateDisplay();
+                this.updatePlantStage();
+                this.updateTotalFocusDisplay();
+                
+                // Handle page visibility changes to update timer when returning to tab
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && this.isRunning && !this.isPaused) {
+                        this.updateDisplay();
+                    }
+                });
+            }
+            
+            initEventListeners() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.minutesInput.addEventListener('input', () => this.updateTimerFromInput());
+                this.minutesInput.addEventListener('change', () => this.updateTimerFromInput());
+                
+                // Preset button listeners
+                this.presetButtons.forEach(btn => {
+                    btn.addEventListener('click', () => this.setPresetTime(btn));
+                });
+            }
+            
+            updateTimerFromInput() {
+                // Don't update timer while it's running
+                if (this.isRunning) {
+                    return;
+                }
+                
+                const inputMinutes = parseInt(this.minutesInput.value);
+                if (inputMinutes >= 1 && inputMinutes <= 120) {
+                    this.minutes = inputMinutes;
+                    this.duration = this.minutes * 60 * 1000;
+                    this.updateDisplay();
+                    
+                    // Clear active preset button state when manually entering time
+                    this.presetButtons.forEach(btn => btn.classList.remove('active'));
+                } else if (this.minutesInput.value === '') {
+                    // Handle empty input gracefully
+                    this.minutes = 1;
+                    this.duration = 60 * 1000;
+                    this.updateDisplay();
+                }
+            }
+            
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.isPaused = false;
+                    
+                    // If starting fresh (not resuming from pause)
+                    if (!this.startTime) {
+                        this.startTime = Date.now();
+                        this.totalPausedDuration = 0;
+                    } else if (this.pausedTime) {
+                        // Resuming from pause
+                        this.totalPausedDuration += Date.now() - this.pausedTime;
+                        this.pausedTime = null;
+                    }
+                    
+                    this.startBtn.textContent = 'Growing...';
+                    this.startBtn.disabled = true;
+                    this.pauseBtn.disabled = false;
+                    this.minutesInput.disabled = true;
+                    this.hiddenControls.classList.add('active');
+                    
+                    // Update display every 100ms for smooth countdown
+                    this.timer = setInterval(() => this.tick(), 100);
+                }
+            }
+            
+            pause() {
+                if (this.isRunning && !this.isPaused) {
+                    this.isPaused = true;
+                    this.isRunning = false;
+                    this.pausedTime = Date.now();
+                    clearInterval(this.timer);
+                    
+                    this.startBtn.textContent = 'Continue';
+                    this.startBtn.disabled = false;
+                    this.pauseBtn.disabled = true;
+                }
+            }
+            
+            reset() {
+                this.isRunning = false;
+                this.isPaused = false;
+                clearInterval(this.timer);
+                
+                // Reset all time tracking
+                this.startTime = null;
+                this.pausedTime = null;
+                this.totalPausedDuration = 0;
+                
+                this.minutes = parseInt(this.minutesInput.value);
+                this.duration = this.minutes * 60 * 1000;
+                
+                this.startBtn.textContent = 'Plant';
+                this.startBtn.disabled = false;
+                this.pauseBtn.disabled = true;
+                this.minutesInput.disabled = false;
+                this.hiddenControls.classList.remove('active');
+                
+                this.updateDisplay();
+            }
+            
+            tick() {
+                const elapsed = this.getElapsedTime();
+                const remaining = Math.max(0, this.duration - elapsed);
+                
+                if (remaining <= 0) {
+                    this.complete();
+                } else {
+                    this.updateDisplay();
+                }
+            }
+            
+            getElapsedTime() {
+                if (!this.startTime) return 0;
+                
+                const now = this.isPaused ? this.pausedTime : Date.now();
+                return now - this.startTime - this.totalPausedDuration;
+            }
+            
+            complete() {
+                this.isRunning = false;
+                this.isPaused = false;
+                clearInterval(this.timer);
+                
+                // Add session time to total focus hours
+                const sessionHours = this.duration / (1000 * 60 * 60);
+                this.totalFocusHours += sessionHours;
+                localStorage.setItem('totalFocusHours', this.totalFocusHours.toString());
+                this.updateTotalFocusDisplay();
+                
+                // Advance plant stage if not at maximum
+                if (this.plantStage < 6) {
+                    this.advancePlantStage();
+                    this.showCelebration();
+                }
+                
+                this.startBtn.textContent = 'Plant';
+                this.startBtn.disabled = false;
+                this.pauseBtn.disabled = true;
+                this.minutesInput.disabled = false;
+                this.hiddenControls.classList.remove('active');
+                
+                this.playNotification();
+                this.timerDisplay.textContent = "Session Complete!";
+                
+                // Reset time tracking
+                this.startTime = null;
+                this.pausedTime = null;
+                this.totalPausedDuration = 0;
+                
+                setTimeout(() => {
+                    this.reset();
+                }, 3000);
+            }
+            
+            advancePlantStage() {
+                this.plantStage++;
+                localStorage.setItem('plantStage', this.plantStage.toString());
+                this.updatePlantStage();
+            }
+            
+            updatePlantStage() {
+                this.plantEmoji.setAttribute('data-stage', this.plantStage.toString());
+                this.stageIndicator.textContent = `Stage ${this.plantStage}/6`;
+                
+                const appTitle = document.querySelector('.app-title');
+                if (this.plantStage === 0) {
+                    appTitle.textContent = 'Start planting today!';
+                } else if (this.plantStage === 6) {
+                    appTitle.textContent = 'Your majestic tree is complete! 🌴';
+                } else {
+                    appTitle.textContent = `Keep growing your plant! Stage ${this.plantStage}/6`;
+                }
+            }
+            
+            showCelebration() {
+                const messages = [
+                    'Your plant grew! 🎉',
+                    'Great progress! 🌱',
+                    'Keep it growing! ✨',
+                    'Amazing focus! 🚀',
+                    'Plant power! 💪',
+                    'Growth achieved! 🌿'
+                ];
+                
+                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                const celebrationText = this.celebrationMessage.querySelector('.celebration-text');
+                celebrationText.textContent = randomMessage;
+                
+                // Show celebration message with animation
+                this.celebrationMessage.classList.add('show');
+                
+                // Add growth animation to plant
+                this.plantEmoji.style.animation = 'growthPulse 0.8s ease-in-out';
+                
+                setTimeout(() => {
+                    this.celebrationMessage.classList.remove('show');
+                    this.plantEmoji.style.animation = '';
+                }, 2000);
+            }
+            
+            updateDisplay() {
+                let totalSeconds;
+                
+                if (this.isRunning || this.isPaused) {
+                    const elapsed = this.getElapsedTime();
+                    const remaining = Math.max(0, this.duration - elapsed);
+                    totalSeconds = Math.ceil(remaining / 1000);
+                } else {
+                    totalSeconds = Math.ceil(this.duration / 1000);
+                }
+                
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                
+                const displayMinutes = minutes.toString().padStart(2, '0');
+                const displaySeconds = seconds.toString().padStart(2, '0');
+                this.timerDisplay.textContent = `${displayMinutes}:${displaySeconds}`;
+            }
+            
+            playNotification() {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Create a pleasant 3-tone chime sequence
+                    const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 (major chord)
+                    const durations = [0.3, 0.3, 0.6];
+                    
+                    frequencies.forEach((freq, index) => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.value = freq;
+                        oscillator.type = 'sine';
+                        
+                        const startTime = audioContext.currentTime + (index * 0.2);
+                        const duration = durations[index];
+                        
+                        gainNode.gain.setValueAtTime(0, startTime);
+                        gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                        
+                        oscillator.start(startTime);
+                        oscillator.stop(startTime + duration);
+                    });
+                } catch (error) {
+                    // Fallback for browsers that don't support Web Audio API
+                    console.log('Timer completed! 🎉');
+                }
+            }
+            
+            setPresetTime(button) {
+                // Don't change time while timer is running
+                if (this.isRunning) {
+                    return;
+                }
+                
+                const minutes = parseInt(button.dataset.minutes);
+                this.minutesInput.value = minutes;
+                this.minutes = minutes;
+                this.duration = minutes * 60 * 1000;
+                this.updateDisplay();
+                
+                // Update active state
+                this.presetButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            }
+            
+            updateTotalFocusDisplay() {
+                // Display with one decimal place
+                this.totalHoursDisplay.textContent = this.totalFocusHours.toFixed(1);
+            }
+        }
+
+        // Modal functionality
+        const infoBtn = document.getElementById('info-btn');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const closeBtn = document.getElementById('close-btn');
+
+        // Open modal
+        infoBtn.addEventListener('click', () => {
+            modalOverlay.classList.add('show');
+        });
+
+        // Close modal
+        closeBtn.addEventListener('click', () => {
+            modalOverlay.classList.remove('show');
+        });
+
+        // Close modal when clicking outside
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('show');
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
+                modalOverlay.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new FocusTimer();
+        });
+    </script>
+</body>
+</html>
