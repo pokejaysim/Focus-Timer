@@ -213,18 +213,16 @@ body.sidebar-open .app-container {
     width: 100%;
     height: 100%;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
-    padding-bottom: 60px;
 }
 
 /* Emoji Plant System */
 .plant-emoji {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    transform-origin: bottom center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .stage {
