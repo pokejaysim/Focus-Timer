@@ -42,6 +42,18 @@ class FocusTimer {
                 this.updateDisplay();
             }
         });
+        
+        // Add keyboard shortcut to reset plant progress (Ctrl/Cmd + Shift + R)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
+                e.preventDefault();
+                if (confirm('Reset your plant progress? This will set your plant back to stage 0.')) {
+                    this.plantStage = 0;
+                    localStorage.setItem('plantStage', '0');
+                    this.updatePlantStage();
+                }
+            }
+        });
     }
     
     initEventListeners() {
@@ -216,7 +228,7 @@ class FocusTimer {
         if (this.plantStage === 0) {
             appTitle.textContent = 'Start planting today!';
         } else if (this.plantStage === 6) {
-            appTitle.textContent = 'Your majestic tree is complete! 🌴';
+            appTitle.textContent = 'Your tree is blooming beautifully! 🌸';
         } else {
             appTitle.textContent = `Keep growing your plant! Stage ${this.plantStage}/6`;
         }
