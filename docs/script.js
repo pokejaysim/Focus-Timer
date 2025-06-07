@@ -13,7 +13,8 @@ class FocusTimer {
         this.plantStage = parseInt(localStorage.getItem('plantStage') || '0');
         this.totalFocusHours = parseFloat(localStorage.getItem('totalFocusHours') || '0');
         
-        this.minutesInput = document.getElementById('minutes-input');
+        this.timeInput = document.getElementById('time-input');
+        this.unitSelector = document.getElementById('unit-selector');
         this.timerDisplay = document.getElementById('timer-display');
         this.startBtn = document.getElementById('start-btn');
         this.pauseBtn = document.getElementById('pause-btn');
@@ -26,8 +27,9 @@ class FocusTimer {
         this.presetButtons = document.querySelectorAll('.preset-btn');
         
         // Initialize timer with input value
-        this.minutes = parseInt(this.minutesInput.value) || 25;
-        this.duration = this.minutes * 60 * 1000; // Convert to milliseconds
+        this.timeValue = parseInt(this.timeInput.value) || 25;
+        this.timeUnit = this.unitSelector.value;
+        this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
         
         this.initEventListeners();
         this.updateDisplay();
@@ -46,8 +48,9 @@ class FocusTimer {
         this.startBtn.addEventListener('click', () => this.start());
         this.pauseBtn.addEventListener('click', () => this.pause());
         this.resetBtn.addEventListener('click', () => this.reset());
-        this.minutesInput.addEventListener('input', () => this.updateTimerFromInput());
-        this.minutesInput.addEventListener('change', () => this.updateTimerFromInput());
+        this.timeInput.addEventListener('input', () => this.updateTimerFromInput());
+        this.timeInput.addEventListener('change', () => this.updateTimerFromInput());
+        this.unitSelector.addEventListener('change', () => this.updateTimerFromInput());
         
         // Preset button listeners
         this.presetButtons.forEach(btn => {
@@ -61,18 +64,21 @@ class FocusTimer {
             return;
         }
         
-        const inputMinutes = parseInt(this.minutesInput.value);
-        if (inputMinutes >= 1 && inputMinutes <= 120) {
-            this.minutes = inputMinutes;
-            this.duration = this.minutes * 60 * 1000;
+        const inputValue = parseInt(this.timeInput.value);
+        const unit = this.unitSelector.value;
+        
+        if (inputValue >= 1) {
+            this.timeValue = inputValue;
+            this.timeUnit = unit;
+            this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
             this.updateDisplay();
             
             // Clear active preset button state when manually entering time
             this.presetButtons.forEach(btn => btn.classList.remove('active'));
-        } else if (this.minutesInput.value === '') {
+        } else if (this.timeInput.value === '') {
             // Handle empty input gracefully
-            this.minutes = 1;
-            this.duration = 60 * 1000;
+            this.timeValue = 1;
+            this.duration = this.convertToMilliseconds(1, this.timeUnit);
             this.updateDisplay();
         }
     }
@@ -95,7 +101,8 @@ class FocusTimer {
             this.startBtn.textContent = 'Growing...';
             this.startBtn.disabled = true;
             this.pauseBtn.disabled = false;
-            this.minutesInput.disabled = true;
+            this.timeInput.disabled = true;
+            this.unitSelector.disabled = true;
             this.hiddenControls.classList.add('active');
             
             // Update display every 100ms for smooth countdown
@@ -126,13 +133,15 @@ class FocusTimer {
         this.pausedTime = null;
         this.totalPausedDuration = 0;
         
-        this.minutes = parseInt(this.minutesInput.value);
-        this.duration = this.minutes * 60 * 1000;
+        this.timeValue = parseInt(this.timeInput.value);
+        this.timeUnit = this.unitSelector.value;
+        this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
         
         this.startBtn.textContent = 'Plant';
         this.startBtn.disabled = false;
         this.pauseBtn.disabled = true;
-        this.minutesInput.disabled = false;
+        this.timeInput.disabled = false;
+        this.unitSelector.disabled = false;
         this.hiddenControls.classList.remove('active');
         
         this.updateDisplay();
@@ -176,7 +185,8 @@ class FocusTimer {
         this.startBtn.textContent = 'Plant';
         this.startBtn.disabled = false;
         this.pauseBtn.disabled = true;
-        this.minutesInput.disabled = false;
+        this.timeInput.disabled = false;
+        this.unitSelector.disabled = false;
         this.hiddenControls.classList.remove('active');
         
         this.playNotification();
@@ -297,10 +307,28 @@ class FocusTimer {
             return;
         }
         
-        const minutes = parseInt(button.dataset.minutes);
-        this.minutesInput.value = minutes;
-        this.minutes = minutes;
-        this.duration = minutes * 60 * 1000;
+        const minutes = parseFloat(button.dataset.minutes);
+        // Handle different preset types
+        if (minutes < 1) {
+            // Convert to seconds for times less than 1 minute
+            this.timeInput.value = Math.round(minutes * 60);
+            this.unitSelector.value = 'seconds';
+            this.timeUnit = 'seconds';
+            this.timeValue = Math.round(minutes * 60);
+        } else if (minutes >= 60) {
+            // Convert to hours for times 60 minutes or more
+            this.timeInput.value = minutes / 60;
+            this.unitSelector.value = 'hours';
+            this.timeUnit = 'hours';
+            this.timeValue = minutes / 60;
+        } else {
+            // Keep as minutes
+            this.timeInput.value = minutes;
+            this.unitSelector.value = 'minutes';
+            this.timeUnit = 'minutes';
+            this.timeValue = minutes;
+        }
+        this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
         this.updateDisplay();
         
         // Update active state
@@ -311,6 +339,19 @@ class FocusTimer {
     updateTotalFocusDisplay() {
         // Display with one decimal place
         this.totalHoursDisplay.textContent = this.totalFocusHours.toFixed(1);
+    }
+    
+    convertToMilliseconds(value, unit) {
+        switch(unit) {
+            case 'seconds':
+                return value * 1000;
+            case 'minutes':
+                return value * 60 * 1000;
+            case 'hours':
+                return value * 60 * 60 * 1000;
+            default:
+                return value * 60 * 1000; // Default to minutes
+        }
     }
 }
 

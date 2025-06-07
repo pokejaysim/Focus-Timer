@@ -412,6 +412,35 @@ body.sidebar-open .app-container {
     font-weight: 400;
 }
 
+/* Unit Selector Styles */
+.unit-selector {
+    padding: 10px 16px;
+    border: 2px solid rgba(139, 69, 19, 0.3);
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    background: white;
+    color: #2C3E50;
+    cursor: pointer;
+    transition: all 0.3s;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2714%27%20height%3D%278%27%20viewBox%3D%270%200%2014%208%27%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%3E%3Cpath%20d%3D%27M1%201l6%206%206-6%27%20stroke%3D%27%232C3E50%27%20stroke-width%3D%272%27%20fill%3D%27none%27%20fill-rule%3D%27evenodd%27/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px;
+}
+
+.unit-selector:hover {
+    border-color: #8B4513;
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.unit-selector:focus {
+    outline: none;
+    border-color: #A0522D;
+    box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.1);
+}
+
 /* Total Focus Display */
 .total-focus-display {
     background: rgba(255, 255, 255, 0.8);
