@@ -9,16 +9,18 @@
 <body>
     <div class="app-container">
         <!-- Info Button -->
-        <button class="info-button" id="info-btn" aria-label="About Timer Tree">i</button>
+        <button class="info-button" id="info-btn" aria-label="About Timer Tree">🌱</button>
 
-        <!-- Modal -->
-        <div class="modal-overlay" id="modal-overlay">
-            <div class="modal-content">
-                <button class="close-button" id="close-btn" aria-label="Close">×</button>
-                <h2 class="modal-title">🌱 Timer Tree</h2>
-                <div class="modal-text">
-                    <p>Timer Tree is a simple and calming focus timer that lets you grow a tree as you stay on task. The idea is simple: the longer you focus, the more your tree grows. Step away too soon, and the growth resets — stay with it, and watch your focus bear fruit (well, leaves).</p>
-                    <p>Great for study sessions, deep work, or mindful breaks — Timer Tree brings a gentle visual reward to your concentration time.</p>
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay">
+            <div class="sidebar" id="sidebar">
+                <button class="sidebar-close" id="sidebar-close" aria-label="Close">×</button>
+                <div class="sidebar-content">
+                    <h2 class="sidebar-title">🌱 Timer Tree</h2>
+                    <div class="sidebar-text">
+                        <p>Timer Tree is a simple and calming focus timer that lets you grow a tree as you stay on task. The idea is simple: the longer you focus, the more your tree grows. Step away too soon, and the growth resets — stay with it, and watch your focus bear fruit (well, leaves).</p>
+                        <p>Great for study sessions, deep work, or mindful breaks — Timer Tree brings a gentle visual reward to your concentration time.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -95,32 +97,36 @@
     
     <script src="script.js"></script>
     <script>
-        // Modal functionality
+        // Sidebar functionality
         const infoBtn = document.getElementById('info-btn');
-        const modalOverlay = document.getElementById('modal-overlay');
-        const closeBtn = document.getElementById('close-btn');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebarClose = document.getElementById('sidebar-close');
 
-        // Open modal
+        // Open sidebar
         infoBtn.addEventListener('click', () => {
-            modalOverlay.classList.add('show');
+            sidebarOverlay.classList.add('show');
+            document.body.classList.add('sidebar-open');
         });
 
-        // Close modal
-        closeBtn.addEventListener('click', () => {
-            modalOverlay.classList.remove('show');
+        // Close sidebar
+        sidebarClose.addEventListener('click', () => {
+            sidebarOverlay.classList.remove('show');
+            document.body.classList.remove('sidebar-open');
         });
 
-        // Close modal when clicking outside
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) {
-                modalOverlay.classList.remove('show');
+        // Close sidebar when clicking on overlay
+        sidebarOverlay.addEventListener('click', (e) => {
+            if (e.target === sidebarOverlay) {
+                sidebarOverlay.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
             }
         });
 
-        // Close modal with Escape key
+        // Close sidebar with Escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
-                modalOverlay.classList.remove('show');
+            if (e.key === 'Escape' && sidebarOverlay.classList.contains('show')) {
+                sidebarOverlay.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
             }
         });
     </script>
