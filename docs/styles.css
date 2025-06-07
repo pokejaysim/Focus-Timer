@@ -251,7 +251,7 @@ body.sidebar-open .app-container {
 /* Stage indicator */
 .stage-indicator {
     position: absolute;
-    bottom: -40px;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(255, 255, 255, 0.8);
