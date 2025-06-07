@@ -215,6 +215,7 @@ body.sidebar-open .app-container {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-bottom: 40px;
 }
 
 /* Emoji Plant System */
