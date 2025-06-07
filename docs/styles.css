@@ -215,7 +215,6 @@ body.sidebar-open .app-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 40px;
 }
 
 /* Emoji Plant System */
@@ -232,9 +231,9 @@ body.sidebar-open .app-container {
     transform: scale(0.5);
     transition: all 0.5s ease;
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%) scale(0.5);
+    left: 0;
+    top: 0;
+    transform: scale(0.5);
 }
 
 /* Show only the current stage */
@@ -246,7 +245,7 @@ body.sidebar-open .app-container {
 .plant-emoji[data-stage="5"] .stage-5,
 .plant-emoji[data-stage="6"] .stage-6 {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
 }
 
 /* Stage indicator */
