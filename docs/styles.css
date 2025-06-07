@@ -262,6 +262,7 @@ body.sidebar-open .app-container {
     font-weight: 500;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(139, 69, 19, 0.2);
+    z-index: 10;
 }
 
 /* Celebration Message */

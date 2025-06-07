@@ -386,11 +386,11 @@ style.textContent = `
     }
     
     @keyframes growthPulse {
-        0% { transform: translateX(-50%) scale(1); }
-        25% { transform: translateX(-50%) scale(1.1); }
-        50% { transform: translateX(-50%) scale(1.2); }
-        75% { transform: translateX(-50%) scale(1.1); }
-        100% { transform: translateX(-50%) scale(1); }
+        0% { transform: scale(1); }
+        25% { transform: scale(1.1); }
+        50% { transform: scale(1.2); }
+        75% { transform: scale(1.1); }
+        100% { transform: scale(1); }
     }
 `;
 document.head.appendChild(style);
