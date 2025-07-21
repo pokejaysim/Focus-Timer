@@ -13,6 +13,14 @@ class FocusTimer {
         this.plantStage = parseInt(localStorage.getItem('plantStage') || '0');
         this.totalFocusHours = parseFloat(localStorage.getItem('totalFocusHours') || '0');
         
+        // Store original page title
+        this.originalTitle = document.title;
+        
+        // Request notification permission on load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
         this.timeInput = document.getElementById('time-input');
         this.unitSelector = document.getElementById('unit-selector');
         this.timerDisplay = document.getElementById('timer-display');
@@ -202,6 +210,8 @@ class FocusTimer {
         this.hiddenControls.classList.remove('active');
         
         this.playNotification();
+        this.showBrowserNotification();
+        this.flashTabTitle();
         this.timerDisplay.textContent = "Session Complete!";
         
         // Reset time tracking
@@ -211,6 +221,7 @@ class FocusTimer {
         
         setTimeout(() => {
             this.reset();
+            document.title = this.originalTitle;
         }, 3000);
     }
     
@@ -364,6 +375,38 @@ class FocusTimer {
             default:
                 return value * 60 * 1000; // Default to minutes
         }
+    }
+    
+    showBrowserNotification() {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification('Focus Timer Complete! 🎉', {
+                body: 'Great job! Your focus session is complete.',
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌱</text></svg>',
+                requireInteraction: true,
+                tag: 'focus-timer'
+            });
+            
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
+            
+            // Auto-close after 10 seconds
+            setTimeout(() => notification.close(), 10000);
+        }
+    }
+    
+    flashTabTitle() {
+        let flashCount = 0;
+        const flashInterval = setInterval(() => {
+            document.title = flashCount % 2 === 0 ? '🎉 Timer Complete!' : '⏰ Session Done!';
+            flashCount++;
+            
+            if (flashCount >= 10) {
+                clearInterval(flashInterval);
+                document.title = this.originalTitle;
+            }
+        }, 500);
     }
 }
 
