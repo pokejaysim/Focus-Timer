@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timer Tree</title>
+    <meta name="description" content="Timer Tree - A calming focus timer that grows a tree as you stay on task. Perfect for study sessions and deep work.">
+    <meta name="author" content="J.Sim">
+    <meta property="og:title" content="Timer Tree">
+    <meta property="og:description" content="A calming focus timer that grows a tree as you stay on task.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Timer Tree">
+    <meta name="twitter:description" content="A calming focus timer that grows a tree as you stay on task.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -26,11 +35,11 @@
         </div>
 
         <!-- Main Content -->
-        <div class="main-content">
+        <main class="main-content">
             <h1 class="app-title">Start planting today!</h1>
             
             <!-- Plant Display -->
-            <div class="plant-circle">
+            <section class="plant-circle" aria-label="Plant Growth Display">
                 <div class="plant-stage-container">
                     <div class="plant-emoji" id="plant-emoji" data-stage="0">
                         <!-- Stage 0: Seed -->
@@ -50,15 +59,15 @@
                     </div>
                 </div>
                 <div class="stage-indicator" id="stage-indicator">Stage 0/6</div>
-            </div>
+            </section>
             
             <!-- Total Focus Time Display -->
-            <div class="total-focus-display" id="total-focus-display">
+            <section class="total-focus-display" id="total-focus-display" aria-label="Total Focus Time">
                 Total Focus Time: <span id="total-hours">0</span> hours
-            </div>
+            </section>
             
             <!-- Timer Settings -->
-            <div class="timer-settings">
+            <section class="timer-settings" aria-label="Timer Configuration">
                 <label for="time-input">Focus time:</label>
                 <input type="number" id="time-input" min="1" max="9999" value="25">
                 <select id="unit-selector" class="unit-selector">
@@ -66,7 +75,7 @@
                     <option value="minutes" selected>minutes</option>
                     <option value="hours">hours</option>
                 </select>
-            </div>
+            </section>
             
             <!-- Preset Buttons -->
             <div class="preset-buttons">
@@ -79,8 +88,14 @@
                 <button class="preset-btn" data-minutes="120" data-unit="minutes" data-display="2h">2h</button>
             </div>
             
+            <!-- Progress Bar -->
+            <div class="progress-container" aria-label="Timer Progress">
+                <div class="progress-bar" id="progress-bar"></div>
+                <div class="progress-text">Focus Progress</div>
+            </div>
+            
             <!-- Timer Display -->
-            <div class="timer-display" id="timer-display">25:00</div>
+            <div class="timer-display" id="timer-display" aria-live="polite" aria-label="Timer countdown">25:00</div>
             
             <!-- Start Button -->
             <button class="start-button" id="start-btn">Plant</button>
@@ -88,6 +103,7 @@
             <!-- Hidden Controls -->
             <div class="hidden-controls" id="hidden-controls">
                 <button id="pause-btn" class="control-btn">Pause</button>
+                <button id="skip-btn" class="control-btn">Skip</button>
                 <button id="reset-btn" class="control-btn">Reset</button>
             </div>
             
@@ -95,7 +111,7 @@
             <div class="celebration-message" id="celebration-message">
                 <div class="celebration-text">Your plant grew! 🎉</div>
             </div>
-        </div>
+        </main>
     </div>
     
     <footer class="app-footer">

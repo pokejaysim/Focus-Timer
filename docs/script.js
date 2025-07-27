@@ -1,5 +1,17 @@
 class FocusTimer {
     constructor() {
+        // Constants
+        this.CONSTANTS = {
+            FOCUS_TIME_DEFAULT: 25,
+            UNIT_DEFAULT: 'minutes',
+            UPDATE_INTERVAL: 100,
+            COMPLETION_DELAY: 3000,
+            FLASH_TITLE_DURATION: 10,
+            NOTIFICATION_AUTO_CLOSE: 10000,
+            PLANT_STAGES: 6,
+            CELEBRATION_DURATION: 2000
+        };
+        
         // Timer state using timestamps for background resilience
         this.startTime = null;
         this.pausedTime = null;
@@ -26,6 +38,7 @@ class FocusTimer {
         this.timerDisplay = document.getElementById('timer-display');
         this.startBtn = document.getElementById('start-btn');
         this.pauseBtn = document.getElementById('pause-btn');
+        this.skipBtn = document.getElementById('skip-btn');
         this.resetBtn = document.getElementById('reset-btn');
         this.plantEmoji = document.getElementById('plant-emoji');
         this.stageIndicator = document.getElementById('stage-indicator');
@@ -33,14 +46,16 @@ class FocusTimer {
         this.hiddenControls = document.getElementById('hidden-controls');
         this.totalHoursDisplay = document.getElementById('total-hours');
         this.presetButtons = document.querySelectorAll('.preset-btn');
+        this.progressBar = document.getElementById('progress-bar');
         
         // Initialize timer with input value
-        this.timeValue = parseInt(this.timeInput.value) || 25;
+        this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
         this.timeUnit = this.unitSelector.value;
         this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
         
         this.initEventListeners();
         this.updateDisplay();
+        this.updateProgressBar();
         this.updatePlantStage();
         this.updateTotalFocusDisplay();
         
@@ -67,6 +82,7 @@ class FocusTimer {
     initEventListeners() {
         this.startBtn.addEventListener('click', () => this.start());
         this.pauseBtn.addEventListener('click', () => this.pause());
+        this.skipBtn.addEventListener('click', () => this.skip());
         this.resetBtn.addEventListener('click', () => this.reset());
         this.timeInput.addEventListener('input', () => this.updateTimerFromInput());
         this.timeInput.addEventListener('change', () => this.updateTimerFromInput());
@@ -92,6 +108,7 @@ class FocusTimer {
             this.timeUnit = unit;
             this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
             this.updateDisplay();
+            this.updateProgressBar();
             
             // Clear active preset button state when manually entering time
             this.presetButtons.forEach(btn => btn.classList.remove('active'));
@@ -100,6 +117,7 @@ class FocusTimer {
             this.timeValue = 1;
             this.duration = this.convertToMilliseconds(1, this.timeUnit);
             this.updateDisplay();
+            this.updateProgressBar();
         }
     }
     
@@ -125,8 +143,13 @@ class FocusTimer {
             this.unitSelector.disabled = true;
             this.hiddenControls.classList.add('active');
             
+            // Add visual state
+            this.timerDisplay.classList.add('running');
+            this.timerDisplay.classList.remove('paused', 'completed');
+            document.body.className = 'timer-running';
+            
             // Update display every 100ms for smooth countdown
-            this.timer = setInterval(() => this.tick(), 100);
+            this.timer = setInterval(() => this.tick(), this.CONSTANTS.UPDATE_INTERVAL);
         }
     }
     
@@ -140,6 +163,19 @@ class FocusTimer {
             this.startBtn.textContent = 'Continue';
             this.startBtn.disabled = false;
             this.pauseBtn.disabled = true;
+            
+            // Add visual state
+            this.timerDisplay.classList.add('paused');
+            this.timerDisplay.classList.remove('running', 'completed');
+            document.body.className = 'timer-paused';
+        }
+    }
+    
+    skip() {
+        if (this.isRunning || this.isPaused) {
+            if (confirm('Skip the current timer session? This will complete the session and advance your plant growth.')) {
+                this.complete();
+            }
         }
     }
     
@@ -164,7 +200,12 @@ class FocusTimer {
         this.unitSelector.disabled = false;
         this.hiddenControls.classList.remove('active');
         
+        // Reset visual state
+        this.timerDisplay.classList.remove('running', 'paused', 'completed');
+        document.body.className = '';
+        
         this.updateDisplay();
+        this.updateProgressBar();
     }
     
     tick() {
@@ -175,6 +216,7 @@ class FocusTimer {
             this.complete();
         } else {
             this.updateDisplay();
+            this.updateProgressBar();
         }
     }
     
@@ -197,7 +239,7 @@ class FocusTimer {
         this.updateTotalFocusDisplay();
         
         // Advance plant stage if not at maximum
-        if (this.plantStage < 6) {
+        if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
             this.advancePlantStage();
             this.showCelebration();
         }
@@ -208,6 +250,11 @@ class FocusTimer {
         this.timeInput.disabled = false;
         this.unitSelector.disabled = false;
         this.hiddenControls.classList.remove('active');
+        
+        // Add completion visual state
+        this.timerDisplay.classList.add('completed');
+        this.timerDisplay.classList.remove('running', 'paused');
+        document.body.className = 'timer-completed';
         
         this.playNotification();
         this.showBrowserNotification();
@@ -222,7 +269,8 @@ class FocusTimer {
         setTimeout(() => {
             this.reset();
             document.title = this.originalTitle;
-        }, 3000);
+            document.body.className = '';
+        }, this.CONSTANTS.COMPLETION_DELAY);
     }
     
     advancePlantStage() {
@@ -233,15 +281,15 @@ class FocusTimer {
     
     updatePlantStage() {
         this.plantEmoji.setAttribute('data-stage', this.plantStage.toString());
-        this.stageIndicator.textContent = `Stage ${this.plantStage}/6`;
+        this.stageIndicator.textContent = `Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
         
         const appTitle = document.querySelector('.app-title');
         if (this.plantStage === 0) {
             appTitle.textContent = 'Start planting today!';
-        } else if (this.plantStage === 6) {
+        } else if (this.plantStage === this.CONSTANTS.PLANT_STAGES) {
             appTitle.textContent = 'Your tree is blooming beautifully! 🌸';
         } else {
-            appTitle.textContent = `Keep growing your plant! Stage ${this.plantStage}/6`;
+            appTitle.textContent = `Keep growing your plant! Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
         }
     }
     
@@ -268,7 +316,7 @@ class FocusTimer {
         setTimeout(() => {
             this.celebrationMessage.classList.remove('show');
             this.plantEmoji.style.animation = '';
-        }, 2000);
+        }, this.CONSTANTS.CELEBRATION_DURATION);
     }
     
     updateDisplay() {
@@ -288,6 +336,21 @@ class FocusTimer {
         const displayMinutes = minutes.toString().padStart(2, '0');
         const displaySeconds = seconds.toString().padStart(2, '0');
         this.timerDisplay.textContent = `${displayMinutes}:${displaySeconds}`;
+    }
+    
+    updateProgressBar() {
+        if (!this.progressBar) return;
+        
+        let progressPercentage = 0;
+        
+        if (this.isRunning || this.isPaused) {
+            const elapsed = this.getElapsedTime();
+            progressPercentage = Math.min(100, (elapsed / this.duration) * 100);
+        } else {
+            progressPercentage = 0;
+        }
+        
+        this.progressBar.style.setProperty('--progress-width', `${progressPercentage}%`);
     }
     
     playNotification() {
@@ -353,6 +416,7 @@ class FocusTimer {
         }
         this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
         this.updateDisplay();
+        this.updateProgressBar();
         
         // Update active state
         this.presetButtons.forEach(btn => btn.classList.remove('active'));
@@ -392,7 +456,7 @@ class FocusTimer {
             };
             
             // Auto-close after 10 seconds
-            setTimeout(() => notification.close(), 10000);
+            setTimeout(() => notification.close(), this.CONSTANTS.NOTIFICATION_AUTO_CLOSE);
         }
     }
     
@@ -402,7 +466,7 @@ class FocusTimer {
             document.title = flashCount % 2 === 0 ? '🎉 Timer Complete!' : '⏰ Session Done!';
             flashCount++;
             
-            if (flashCount >= 10) {
+            if (flashCount >= this.CONSTANTS.FLASH_TITLE_DURATION) {
                 clearInterval(flashInterval);
                 document.title = this.originalTitle;
             }
