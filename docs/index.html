@@ -47,12 +47,6 @@
                 </div>
                 <div class="stage-indicator" id="stage-indicator">Stage 0/6</div>
             </section>
-
-            <!-- Plant Selection Button -->
-            <button class="plant-selector-btn" id="plant-selector-btn">
-                <span class="plant-selector-icon">🌱</span>
-                <span class="plant-selector-text">Choose Plant</span>
-            </button>
             
             <!-- Total Focus Time Display -->
             <section class="total-focus-display" id="total-focus-display" aria-label="Total Focus Time">
@@ -61,13 +55,24 @@
 
             <!-- Timer Settings -->
             <section class="timer-settings" aria-label="Timer Configuration">
-                <label for="time-input">Focus time:</label>
-                <input type="number" id="time-input" min="1" max="9999" value="25">
-                <select id="unit-selector" class="unit-selector">
-                    <option value="seconds">seconds</option>
-                    <option value="minutes" selected>minutes</option>
-                    <option value="hours">hours</option>
-                </select>
+                <div class="settings-row">
+                    <label for="time-input">Focus time:</label>
+                    <div class="time-input-group">
+                        <input type="number" id="time-input" min="1" max="9999" value="25">
+                        <select id="unit-selector" class="unit-selector">
+                            <option value="seconds">seconds</option>
+                            <option value="minutes" selected>minutes</option>
+                            <option value="hours">hours</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <label for="plant-selector-btn">Plant type:</label>
+                    <button class="plant-selector-btn" id="plant-selector-btn">
+                        <span class="plant-selector-icon">🌱</span>
+                        <span class="plant-selector-text">Choose Plant</span>
+                    </button>
+                </div>
             </section>
             
             <!-- Preset Buttons -->

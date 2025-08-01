@@ -516,22 +516,35 @@ body.sidebar-open .app-container {
 /* Timer Settings */
 .timer-settings {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 12px;
     background: rgba(255, 255, 255, 0.8);
-    padding: 12px 24px;
+    padding: 20px 24px;
     border-radius: 30px;
     margin-bottom: 20px;
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(139, 69, 19, 0.2);
+    width: 100%;
+    max-width: 380px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .timer-settings label {
     font-size: 16px;
     color: #2C3E50;
-    font-weight: 400;
+    font-weight: 500;
+}
+
+.time-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .timer-settings input {
@@ -554,12 +567,6 @@ body.sidebar-open .app-container {
     background: white;
     transform: scale(1.05);
     box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.1);
-}
-
-.timer-settings span {
-    font-size: 16px;
-    color: #2C3E50;
-    font-weight: 400;
 }
 
 /* Unit Selector Styles */
@@ -608,31 +615,25 @@ body.sidebar-open .app-container {
 
 /* Plant Selector Button */
 .plant-selector-btn {
-    background: rgba(255, 255, 255, 0.9);
+    background: white;
     color: #2C3E50;
     border: 2px solid rgba(139, 69, 19, 0.3);
     padding: 8px 16px;
     font-size: 14px;
     font-weight: 500;
-    border-radius: 20px;
+    border-radius: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     justify-content: center;
-    margin-top: 8px;
-    position: relative;
-    z-index: 10;
-    margin-bottom: 20px;
 }
 
 .plant-selector-btn:hover {
     background: rgba(255, 255, 255, 0.95);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     border-color: #8B4513;
 }
 
@@ -641,7 +642,7 @@ body.sidebar-open .app-container {
 }
 
 .plant-selector-icon {
-    font-size: 16px;
+    font-size: 18px;
     transition: transform 0.3s ease;
 }
 
@@ -916,7 +917,7 @@ body.modal-open {
     }
     
     .timer-settings {
-        padding: var(--spacing-sm) var(--spacing-lg);
+        padding: var(--spacing-md) var(--spacing-lg);
         gap: var(--spacing-sm);
     }
     
