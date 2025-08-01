@@ -565,6 +565,11 @@ class FocusTimer {
         if (this.PLANT_TYPES[plantType]) {
             this.selectedPlant = plantType;
             localStorage.setItem('selectedPlant', plantType);
+            
+            // Reset plant stage to 0 when selecting a new plant
+            this.plantStage = 0;
+            localStorage.setItem('plantStage', '0');
+            
             this.updatePlantStage();
             this.updatePlantSelectorButton();
             this.updatePlantOptionsSelection();
