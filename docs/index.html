@@ -66,6 +66,14 @@
                 Total Focus Time: <span id="total-hours">0</span> hours
             </section>
             
+            <!-- Plant Selection Button -->
+            <section class="plant-selector-section" aria-label="Plant Selection">
+                <button class="plant-selector-btn" id="plant-selector-btn">
+                    <span class="plant-selector-icon">🌱</span>
+                    <span class="plant-selector-text">Choose Plant</span>
+                </button>
+            </section>
+
             <!-- Timer Settings -->
             <section class="timer-settings" aria-label="Timer Configuration">
                 <label for="time-input">Focus time:</label>
@@ -112,6 +120,48 @@
                 <div class="celebration-text">Your plant grew! 🎉</div>
             </div>
         </main>
+
+        <!-- Plant Selection Modal -->
+        <div class="plant-modal-overlay" id="plant-modal-overlay">
+            <div class="plant-modal" id="plant-modal">
+                <div class="plant-modal-header">
+                    <h3 class="plant-modal-title">Choose Your Plant</h3>
+                    <button class="plant-modal-close" id="plant-modal-close" aria-label="Close">×</button>
+                </div>
+                <div class="plant-options-grid">
+                    <div class="plant-option" data-plant="classic">
+                        <div class="plant-preview">🌳</div>
+                        <div class="plant-name">Classic Tree</div>
+                        <div class="plant-description">Acorn to mighty oak</div>
+                    </div>
+                    <div class="plant-option" data-plant="flower">
+                        <div class="plant-preview">🌺</div>
+                        <div class="plant-name">Flower Garden</div>
+                        <div class="plant-description">Beautiful blooms</div>
+                    </div>
+                    <div class="plant-option" data-plant="cactus">
+                        <div class="plant-preview">🌵</div>
+                        <div class="plant-name">Desert Cactus</div>
+                        <div class="plant-description">Desert survivor</div>
+                    </div>
+                    <div class="plant-option" data-plant="bamboo">
+                        <div class="plant-preview">🎋</div>
+                        <div class="plant-name">Bamboo Forest</div>
+                        <div class="plant-description">Zen growth</div>
+                    </div>
+                    <div class="plant-option" data-plant="fruit">
+                        <div class="plant-preview">🍎</div>
+                        <div class="plant-name">Fruit Tree</div>
+                        <div class="plant-description">Sweet rewards</div>
+                    </div>
+                    <div class="plant-option" data-plant="rose">
+                        <div class="plant-preview">🌹</div>
+                        <div class="plant-name">Rose Garden</div>
+                        <div class="plant-description">Elegant beauty</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <footer class="app-footer">

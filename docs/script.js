@@ -11,6 +11,40 @@ class FocusTimer {
             PLANT_STAGES: 6,
             CELEBRATION_DURATION: 2000
         };
+
+        // Plant types with their growth stages
+        this.PLANT_TYPES = {
+            classic: {
+                name: 'Classic Tree',
+                stages: ['🌰', '🌱', '🪴', '🌾', '🌲', '🌳', '🌸'],
+                description: 'Acorn to mighty oak'
+            },
+            flower: {
+                name: 'Flower Garden',
+                stages: ['🌰', '🌱', '🌿', '🌼', '🌻', '🌺', '🌸'],
+                description: 'Beautiful blooms'
+            },
+            cactus: {
+                name: 'Desert Cactus',
+                stages: ['🌰', '🌵', '🌵', '🌵', '🌵', '🌵', '🌼'],
+                description: 'Desert survivor'
+            },
+            bamboo: {
+                name: 'Bamboo Forest',
+                stages: ['🌰', '🌱', '🎋', '🎋', '🎋', '🎋', '🌸'],
+                description: 'Zen growth'
+            },
+            fruit: {
+                name: 'Fruit Tree',
+                stages: ['🌰', '🌱', '🌿', '🌳', '🍎', '🍎', '🍎'],
+                description: 'Sweet rewards'
+            },
+            rose: {
+                name: 'Rose Garden',
+                stages: ['🌰', '🌱', '🌿', '🥀', '🌹', '🌹', '🌹'],
+                description: 'Elegant beauty'
+            }
+        };
         
         // Timer state using timestamps for background resilience
         this.startTime = null;
@@ -24,6 +58,7 @@ class FocusTimer {
         
         this.plantStage = parseInt(localStorage.getItem('plantStage') || '0');
         this.totalFocusHours = parseFloat(localStorage.getItem('totalFocusHours') || '0');
+        this.selectedPlant = localStorage.getItem('selectedPlant') || 'classic';
         
         // Store original page title
         this.originalTitle = document.title;
@@ -48,6 +83,13 @@ class FocusTimer {
         this.presetButtons = document.querySelectorAll('.preset-btn');
         this.progressBar = document.getElementById('progress-bar');
         
+        // Plant selector elements
+        this.plantSelectorBtn = document.getElementById('plant-selector-btn');
+        this.plantModal = document.getElementById('plant-modal');
+        this.plantModalOverlay = document.getElementById('plant-modal-overlay');
+        this.plantModalClose = document.getElementById('plant-modal-close');
+        this.plantOptions = document.querySelectorAll('.plant-option');
+        
         // Initialize timer with input value
         this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
         this.timeUnit = this.unitSelector.value;
@@ -58,6 +100,8 @@ class FocusTimer {
         this.updateProgressBar();
         this.updatePlantStage();
         this.updateTotalFocusDisplay();
+        this.updatePlantSelectorButton();
+        this.updatePlantOptionsSelection();
         
         // Handle page visibility changes to update timer when returning to tab
         document.addEventListener('visibilitychange', () => {
@@ -91,6 +135,27 @@ class FocusTimer {
         // Preset button listeners
         this.presetButtons.forEach(btn => {
             btn.addEventListener('click', () => this.setPresetTime(btn));
+        });
+
+        // Plant selector listeners
+        this.plantSelectorBtn.addEventListener('click', () => this.openPlantModal());
+        this.plantModalClose.addEventListener('click', () => this.closePlantModal());
+        this.plantModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.plantModalOverlay) {
+                this.closePlantModal();
+            }
+        });
+
+        // Plant option listeners
+        this.plantOptions.forEach(option => {
+            option.addEventListener('click', () => this.selectPlant(option.dataset.plant));
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.plantModalOverlay.classList.contains('show')) {
+                this.closePlantModal();
+            }
         });
     }
     
@@ -283,13 +348,31 @@ class FocusTimer {
         this.plantEmoji.setAttribute('data-stage', this.plantStage.toString());
         this.stageIndicator.textContent = `Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
         
+        // Update plant emoji based on selected plant type and current stage
+        const currentPlant = this.PLANT_TYPES[this.selectedPlant];
+        const stages = this.plantEmoji.querySelectorAll('.stage');
+        
+        // Clear all stages first
+        stages.forEach(stage => {
+            stage.textContent = '';
+        });
+        
+        // Set emojis for current plant type
+        currentPlant.stages.forEach((emoji, index) => {
+            if (stages[index]) {
+                stages[index].textContent = emoji;
+            }
+        });
+        
         const appTitle = document.querySelector('.app-title');
+        const plantName = currentPlant.name;
+        
         if (this.plantStage === 0) {
-            appTitle.textContent = 'Start planting today!';
+            appTitle.textContent = `Start growing your ${plantName} today!`;
         } else if (this.plantStage === this.CONSTANTS.PLANT_STAGES) {
-            appTitle.textContent = 'Your tree is blooming beautifully! 🌸';
+            appTitle.textContent = `Your ${plantName.toLowerCase()} is fully grown! 🌸`;
         } else {
-            appTitle.textContent = `Keep growing your plant! Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
+            appTitle.textContent = `Keep growing your ${plantName.toLowerCase()}! Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
         }
     }
     
@@ -471,6 +554,57 @@ class FocusTimer {
                 document.title = this.originalTitle;
             }
         }, 500);
+    }
+
+    // Plant selection methods
+    openPlantModal() {
+        this.plantModalOverlay.classList.add('show');
+        document.body.classList.add('modal-open');
+    }
+
+    closePlantModal() {
+        this.plantModalOverlay.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    }
+
+    selectPlant(plantType) {
+        if (this.PLANT_TYPES[plantType]) {
+            this.selectedPlant = plantType;
+            localStorage.setItem('selectedPlant', plantType);
+            this.updatePlantStage();
+            this.updatePlantSelectorButton();
+            this.updatePlantOptionsSelection();
+            this.closePlantModal();
+            
+            // Show a brief plant switch animation
+            this.plantEmoji.style.animation = 'growthPulse 0.6s ease-in-out';
+            setTimeout(() => {
+                this.plantEmoji.style.animation = '';
+            }, 600);
+        }
+    }
+
+    updatePlantSelectorButton() {
+        const currentPlant = this.PLANT_TYPES[this.selectedPlant];
+        const iconElement = this.plantSelectorBtn.querySelector('.plant-selector-icon');
+        const textElement = this.plantSelectorBtn.querySelector('.plant-selector-text');
+        
+        if (iconElement && textElement) {
+            // Show the current stage emoji or the final stage as preview
+            const previewStage = Math.min(this.plantStage, currentPlant.stages.length - 1);
+            iconElement.textContent = currentPlant.stages[previewStage];
+            textElement.textContent = currentPlant.name;
+        }
+    }
+
+    updatePlantOptionsSelection() {
+        this.plantOptions.forEach(option => {
+            if (option.dataset.plant === this.selectedPlant) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
     }
 }
 

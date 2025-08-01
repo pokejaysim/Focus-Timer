@@ -625,6 +625,211 @@ body.sidebar-open .app-container {
     border: 1px solid rgba(139, 69, 19, 0.2);
 }
 
+/* Plant Selector Section */
+.plant-selector-section {
+    margin-bottom: 25px;
+}
+
+.plant-selector-btn {
+    background: rgba(255, 255, 255, 0.8);
+    color: #2C3E50;
+    border: 2px solid rgba(139, 69, 19, 0.3);
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.plant-selector-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    border-color: #8B4513;
+}
+
+.plant-selector-btn:active {
+    transform: translateY(0);
+}
+
+.plant-selector-icon {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.plant-selector-btn:hover .plant-selector-icon {
+    transform: scale(1.1);
+}
+
+.plant-selector-text {
+    font-weight: 600;
+}
+
+/* Plant Modal Overlay */
+.plant-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 2000;
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.plant-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Plant Modal */
+.plant-modal {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 25px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(139, 69, 19, 0.2);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.plant-modal-overlay.show .plant-modal {
+    transform: scale(1);
+}
+
+/* Plant Modal Header */
+.plant-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px 20px 30px;
+    border-bottom: 2px solid rgba(139, 69, 19, 0.1);
+}
+
+.plant-modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin: 0;
+}
+
+.plant-modal-close {
+    width: 32px;
+    height: 32px;
+    background: rgba(139, 69, 19, 0.1);
+    border: 2px solid rgba(139, 69, 19, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    color: #2C3E50;
+}
+
+.plant-modal-close:hover {
+    background: rgba(139, 69, 19, 0.2);
+    border-color: #8B4513;
+    transform: rotate(90deg);
+}
+
+/* Plant Options Grid */
+.plant-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    padding: 25px 30px 30px 30px;
+}
+
+.plant-option {
+    background: rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(139, 69, 19, 0.2);
+    border-radius: 20px;
+    padding: 20px 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    position: relative;
+}
+
+.plant-option:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: #8B4513;
+}
+
+.plant-option.selected {
+    background: rgba(160, 82, 45, 0.1);
+    border-color: #A0522D;
+    box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.2);
+}
+
+.plant-option.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: #A0522D;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.plant-preview {
+    font-size: 48px;
+    margin-bottom: 10px;
+    transition: transform 0.3s ease;
+}
+
+.plant-option:hover .plant-preview {
+    transform: scale(1.1);
+}
+
+.plant-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-bottom: 5px;
+}
+
+.plant-description {
+    font-size: 12px;
+    color: rgba(44, 62, 80, 0.7);
+    font-weight: 400;
+}
+
+/* Modal open body state */
+body.modal-open {
+    overflow: hidden;
+}
+
 .total-focus-display #total-hours {
     font-weight: 700;
     font-size: 20px;
@@ -788,6 +993,52 @@ body.sidebar-open .app-container {
     
     .main-content {
         padding: var(--spacing-3xl) var(--spacing-lg) var(--spacing-xl) var(--spacing-lg);
+    }
+
+    .plant-selector-btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        font-size: var(--font-size-sm);
+    }
+
+    .plant-selector-icon {
+        font-size: 18px;
+    }
+
+    .plant-modal {
+        margin: 10px;
+        max-width: calc(100% - 20px);
+        border-radius: 20px;
+    }
+
+    .plant-modal-header {
+        padding: 20px 20px 15px 20px;
+    }
+
+    .plant-modal-title {
+        font-size: 20px;
+    }
+
+    .plant-options-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        padding: 20px 20px 25px 20px;
+    }
+
+    .plant-option {
+        padding: 15px 10px;
+    }
+
+    .plant-preview {
+        font-size: 36px;
+        margin-bottom: 8px;
+    }
+
+    .plant-name {
+        font-size: 14px;
+    }
+
+    .plant-description {
+        font-size: 11px;
     }
 }
 
