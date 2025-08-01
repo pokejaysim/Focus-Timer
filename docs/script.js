@@ -349,7 +349,7 @@ class FocusTimer {
     
     updatePlantStage() {
         this.plantEmoji.setAttribute('data-stage', this.plantStage.toString());
-        this.stageIndicator.textContent = `Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
+        this.stageIndicator.textContent = `Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES + 1}`;
         
         // Update plant emoji based on selected plant type and current stage
         const currentPlant = this.PLANT_TYPES[this.selectedPlant];
@@ -366,7 +366,7 @@ class FocusTimer {
         } else if (this.plantStage === this.CONSTANTS.PLANT_STAGES) {
             appTitle.textContent = `Your ${plantName.toLowerCase()} is fully grown! 🌸`;
         } else {
-            appTitle.textContent = `Keep growing your ${plantName.toLowerCase()}! Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES}`;
+            appTitle.textContent = `Keep growing your ${plantName.toLowerCase()}! Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES + 1}`;
         }
     }
     
