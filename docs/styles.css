@@ -273,7 +273,7 @@ body.sidebar-open .app-container {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
     position: relative;
     overflow: visible;
@@ -606,7 +606,7 @@ body.sidebar-open .app-container {
     border: 1px solid rgba(139, 69, 19, 0.2);
 }
 
-/* Plant Selector Button - positioned at bottom of plant circle */
+/* Plant Selector Button */
 .plant-selector-btn {
     background: rgba(255, 255, 255, 0.9);
     color: #2C3E50;
@@ -626,6 +626,7 @@ body.sidebar-open .app-container {
     margin-top: 8px;
     position: relative;
     z-index: 10;
+    margin-bottom: 20px;
 }
 
 .plant-selector-btn:hover {
@@ -1066,4 +1067,15 @@ body.modal-open {
         padding: var(--spacing-lg) var(--spacing-6xl);
         font-size: var(--font-size-xl);
     }
+}
+
+/* Additional styling for a more polished look */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
 }
