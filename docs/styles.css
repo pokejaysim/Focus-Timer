@@ -270,12 +270,13 @@ body.sidebar-open .app-container {
     background: linear-gradient(145deg, #6B8E6B 0%, #556B55 50%, #4A5D4A 100%);
     border-radius: 50%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     margin-bottom: 40px;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     border: 3px solid rgba(139, 69, 19, 0.2);
 }
 
@@ -302,48 +303,28 @@ body.sidebar-open .app-container {
 
 /* Emoji Plant System */
 .plant-emoji {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.stage {
     font-size: 120px;
-    opacity: 0;
     transition: all 0.5s ease;
-    position: absolute;
-    display: none;
-}
-
-/* Show only the current stage */
-.plant-emoji[data-stage="0"] .stage-0,
-.plant-emoji[data-stage="1"] .stage-1,
-.plant-emoji[data-stage="2"] .stage-2,
-.plant-emoji[data-stage="3"] .stage-3,
-.plant-emoji[data-stage="4"] .stage-4,
-.plant-emoji[data-stage="5"] .stage-5,
-.plant-emoji[data-stage="6"] .stage-6 {
-    opacity: 1;
-    display: block;
-    position: relative;
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 /* Stage indicator */
 .stage-indicator {
     position: absolute;
-    bottom: 10px;
+    bottom: -15px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.9);
     color: #2C3E50;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 12px;
     font-weight: 500;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(139, 69, 19, 0.2);
-    z-index: 10;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Celebration Message */
@@ -625,27 +606,26 @@ body.sidebar-open .app-container {
     border: 1px solid rgba(139, 69, 19, 0.2);
 }
 
-/* Plant Selector Section */
-.plant-selector-section {
-    margin-bottom: 25px;
-}
-
+/* Plant Selector Button - positioned at bottom of plant circle */
 .plant-selector-btn {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.9);
     color: #2C3E50;
     border: 2px solid rgba(139, 69, 19, 0.3);
-    padding: 12px 24px;
-    font-size: 16px;
+    padding: 8px 16px;
+    font-size: 14px;
     font-weight: 500;
-    border-radius: 25px;
+    border-radius: 20px;
     cursor: pointer;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     justify-content: center;
+    margin-top: 8px;
+    position: relative;
+    z-index: 10;
 }
 
 .plant-selector-btn:hover {
@@ -660,7 +640,7 @@ body.sidebar-open .app-container {
 }
 
 .plant-selector-icon {
-    font-size: 20px;
+    font-size: 16px;
     transition: transform 0.3s ease;
 }
 
@@ -755,7 +735,7 @@ body.sidebar-open .app-container {
 /* Plant Options Grid */
 .plant-options-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
     padding: 25px 30px 30px 30px;
 }
@@ -1019,7 +999,7 @@ body.modal-open {
     }
 
     .plant-options-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
         padding: 20px 20px 25px 20px;
     }

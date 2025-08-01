@@ -157,6 +157,9 @@ class FocusTimer {
                 this.closePlantModal();
             }
         });
+
+        // Verify all elements exist
+        this.verifyElements();
     }
     
     updateTimerFromInput() {
@@ -350,19 +353,10 @@ class FocusTimer {
         
         // Update plant emoji based on selected plant type and current stage
         const currentPlant = this.PLANT_TYPES[this.selectedPlant];
-        const stages = this.plantEmoji.querySelectorAll('.stage');
+        const currentStage = Math.min(this.plantStage, currentPlant.stages.length - 1);
         
-        // Clear all stages first
-        stages.forEach(stage => {
-            stage.textContent = '';
-        });
-        
-        // Set emojis for current plant type
-        currentPlant.stages.forEach((emoji, index) => {
-            if (stages[index]) {
-                stages[index].textContent = emoji;
-            }
-        });
+        // Directly set the emoji content
+        this.plantEmoji.textContent = currentPlant.stages[currentStage];
         
         const appTitle = document.querySelector('.app-title');
         const plantName = currentPlant.name;
@@ -605,6 +599,23 @@ class FocusTimer {
                 option.classList.remove('selected');
             }
         });
+    }
+
+    verifyElements() {
+        const requiredElements = [
+            'plantSelectorBtn', 'plantModal', 'plantModalOverlay', 
+            'plantModalClose', 'plantEmoji', 'stageIndicator'
+        ];
+        
+        requiredElements.forEach(element => {
+            if (!this[element]) {
+                console.warn(`Element ${element} not found. Plant selection may not work properly.`);
+            }
+        });
+
+        if (this.plantOptions.length === 0) {
+            console.warn('No plant options found. Plant selection modal may be empty.');
+        }
     }
 }
 
