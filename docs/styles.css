@@ -95,6 +95,14 @@ body.timer-completed {
     background: linear-gradient(180deg, #90EE90 0%, #98FB98 100%);
 }
 
+body.timer-break {
+    background: linear-gradient(180deg, #87CEEB 0%, #ADD8E6 100%);
+}
+
+body.timer-work {
+    background: linear-gradient(180deg, #9BC29B 0%, #B8E6B8 100%);
+}
+
 .app-container {
     max-width: 430px;
     margin: 0 auto;
@@ -818,6 +826,114 @@ body.modal-open {
     color: #2C3E50;
 }
 
+/* Toggle Switch */
+.pomodoro-toggle-container {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.toggle-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(139, 69, 19, 0.3);
+    border-radius: 24px;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(139, 69, 19, 0.2);
+}
+
+.toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-input:checked + .toggle-slider {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.toggle-input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-switch:hover .toggle-slider {
+    box-shadow: 0 0 8px rgba(160, 82, 45, 0.3);
+}
+
+/* Pomodoro Status Display */
+.pomodoro-status {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 16px 32px;
+    border-radius: 30px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(139, 69, 19, 0.2);
+    transition: all 0.3s ease;
+}
+
+.pomodoro-status.work-mode {
+    background: rgba(155, 194, 155, 0.2);
+    border-color: var(--color-secondary);
+}
+
+.pomodoro-status.break-mode {
+    background: rgba(135, 206, 235, 0.2);
+    border-color: #87CEEB;
+}
+
+.pomodoro-mode-indicator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: #2C3E50;
+}
+
+.mode-text {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.cycle-count {
+    font-size: 14px;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.pomodoro-status.work-mode .mode-text {
+    color: var(--color-secondary);
+}
+
+.pomodoro-status.break-mode .mode-text {
+    color: #4682B4;
+}
+
 /* Preset Buttons */
 .preset-buttons {
     display: flex;
@@ -1021,6 +1137,35 @@ body.modal-open {
 
     .plant-description {
         font-size: 11px;
+    }
+
+    .pomodoro-status {
+        padding: var(--spacing-md) var(--spacing-xl);
+        font-size: var(--font-size-sm);
+    }
+
+    .mode-text {
+        font-size: var(--font-size-base);
+    }
+
+    .cycle-count {
+        font-size: var(--font-size-xs);
+    }
+
+    .toggle-switch {
+        width: 44px;
+        height: 22px;
+    }
+
+    .toggle-slider:before {
+        height: 14px;
+        width: 14px;
+        left: 2px;
+        bottom: 2px;
+    }
+
+    .toggle-input:checked + .toggle-slider:before {
+        transform: translateX(22px);
     }
 }
 

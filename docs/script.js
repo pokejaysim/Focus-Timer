@@ -9,7 +9,8 @@ class FocusTimer {
             FLASH_TITLE_DURATION: 10,
             NOTIFICATION_AUTO_CLOSE: 10000,
             PLANT_STAGES: 6,
-            CELEBRATION_DURATION: 2000
+            CELEBRATION_DURATION: 2000,
+            BREAK_DURATION_DEFAULT: 2
         };
 
         // Plant types with their growth stages
@@ -60,6 +61,13 @@ class FocusTimer {
         this.totalFocusHours = parseFloat(localStorage.getItem('totalFocusHours') || '0');
         this.selectedPlant = localStorage.getItem('selectedPlant') || 'classic';
         
+        // Pomodoro Mode state
+        this.pomodoroMode = localStorage.getItem('pomodoroMode') === 'true' || false;
+        this.isBreakTime = false;
+        this.cycleCount = parseInt(localStorage.getItem('cycleCount') || '1');
+        this.originalWorkDuration = 0;
+        this.breakDuration = this.CONSTANTS.BREAK_DURATION_DEFAULT * 60 * 1000;
+        
         // Store original page title
         this.originalTitle = document.title;
         
@@ -90,6 +98,12 @@ class FocusTimer {
         this.plantModalClose = document.getElementById('plant-modal-close');
         this.plantOptions = document.querySelectorAll('.plant-option');
         
+        // Pomodoro Mode elements
+        this.pomodoroToggle = document.getElementById('pomodoro-toggle');
+        this.pomodoroStatus = document.getElementById('pomodoro-status');
+        this.modeText = document.getElementById('mode-text');
+        this.cycleCountElement = document.getElementById('cycle-count');
+        
         // Initialize timer with input value
         this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
         this.timeUnit = this.unitSelector.value;
@@ -102,6 +116,8 @@ class FocusTimer {
         this.updateTotalFocusDisplay();
         this.updatePlantSelectorButton();
         this.updatePlantOptionsSelection();
+        this.updatePomodoroToggle();
+        this.updatePomodoroStatus();
         
         // Handle page visibility changes to update timer when returning to tab
         document.addEventListener('visibilitychange', () => {
@@ -151,6 +167,9 @@ class FocusTimer {
             option.addEventListener('click', () => this.selectPlant(option.dataset.plant));
         });
 
+        // Pomodoro Mode toggle listener
+        this.pomodoroToggle.addEventListener('change', () => this.togglePomodoroMode());
+
         // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.plantModalOverlay.classList.contains('show')) {
@@ -194,6 +213,11 @@ class FocusTimer {
             this.isRunning = true;
             this.isPaused = false;
             
+            // Store original work duration for Pomodoro mode
+            if (this.pomodoroMode && !this.originalWorkDuration) {
+                this.originalWorkDuration = this.duration;
+            }
+            
             // If starting fresh (not resuming from pause)
             if (!this.startTime) {
                 this.startTime = Date.now();
@@ -204,7 +228,8 @@ class FocusTimer {
                 this.pausedTime = null;
             }
             
-            this.startBtn.textContent = 'Growing...';
+            const buttonText = this.isBreakTime ? 'On Break...' : 'Growing...';
+            this.startBtn.textContent = buttonText;
             this.startBtn.disabled = true;
             this.pauseBtn.disabled = false;
             this.timeInput.disabled = true;
@@ -214,7 +239,12 @@ class FocusTimer {
             // Add visual state
             this.timerDisplay.classList.add('running');
             this.timerDisplay.classList.remove('paused', 'completed');
-            document.body.className = 'timer-running';
+            
+            if (this.pomodoroMode) {
+                document.body.className = this.isBreakTime ? 'timer-break' : 'timer-running';
+            } else {
+                document.body.className = 'timer-running';
+            }
             
             // Update display every 100ms for smooth countdown
             this.timer = setInterval(() => this.tick(), this.CONSTANTS.UPDATE_INTERVAL);
@@ -257,9 +287,23 @@ class FocusTimer {
         this.pausedTime = null;
         this.totalPausedDuration = 0;
         
-        this.timeValue = parseInt(this.timeInput.value);
-        this.timeUnit = this.unitSelector.value;
-        this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
+        if (this.pomodoroMode) {
+            // Reset to work mode and original duration
+            this.isBreakTime = false;
+            if (this.originalWorkDuration) {
+                this.duration = this.originalWorkDuration;
+            } else {
+                this.timeValue = parseInt(this.timeInput.value);
+                this.timeUnit = this.unitSelector.value;
+                this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
+            }
+            this.cycleCount = 1;
+            localStorage.setItem('cycleCount', '1');
+        } else {
+            this.timeValue = parseInt(this.timeInput.value);
+            this.timeUnit = this.unitSelector.value;
+            this.duration = this.convertToMilliseconds(this.timeValue, this.timeUnit);
+        }
         
         this.startBtn.textContent = 'Plant';
         this.startBtn.disabled = false;
@@ -274,6 +318,7 @@ class FocusTimer {
         
         this.updateDisplay();
         this.updateProgressBar();
+        this.updatePomodoroStatus();
     }
     
     tick() {
@@ -300,6 +345,14 @@ class FocusTimer {
         this.isPaused = false;
         clearInterval(this.timer);
         
+        if (this.pomodoroMode) {
+            this.handlePomodoroComplete();
+        } else {
+            this.handleNormalComplete();
+        }
+    }
+    
+    handleNormalComplete() {
         // Add session time to total focus hours
         const sessionHours = this.duration / (1000 * 60 * 60);
         this.totalFocusHours += sessionHours;
@@ -339,6 +392,114 @@ class FocusTimer {
             document.title = this.originalTitle;
             document.body.className = '';
         }, this.CONSTANTS.COMPLETION_DELAY);
+    }
+    
+    handlePomodoroComplete() {
+        if (this.isBreakTime) {
+            // Break completed, start work session
+            this.transitionToWork();
+        } else {
+            // Work completed, start break session
+            this.transitionToBreak();
+        }
+    }
+    
+    transitionToBreak() {
+        // Add session time to total focus hours
+        const sessionHours = this.duration / (1000 * 60 * 60);
+        this.totalFocusHours += sessionHours;
+        localStorage.setItem('totalFocusHours', this.totalFocusHours.toString());
+        this.updateTotalFocusDisplay();
+        
+        // Advance plant stage if not at maximum
+        if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
+            this.advancePlantStage();
+            this.showCelebration();
+        }
+        
+        this.isBreakTime = true;
+        this.duration = this.breakDuration;
+        
+        this.playNotification();
+        this.showBrowserNotification('Work Complete! Break time! 🎉', 'Great job! Starting your break.');
+        this.flashTabTitle();
+        this.timerDisplay.textContent = "Break Time!";
+        
+        document.body.className = 'timer-break';
+        this.updatePomodoroStatus();
+        
+        // Reset time tracking and automatically start break
+        this.startTime = null;
+        this.pausedTime = null;
+        this.totalPausedDuration = 0;
+        
+        setTimeout(() => {
+            this.startBreakTimer();
+        }, this.CONSTANTS.COMPLETION_DELAY);
+    }
+    
+    transitionToWork() {
+        this.isBreakTime = false;
+        this.duration = this.originalWorkDuration;
+        this.cycleCount++;
+        localStorage.setItem('cycleCount', this.cycleCount.toString());
+        
+        this.playChimeSound();
+        this.showBrowserNotification('Break Complete! Back to work! 🌱', 'Ready for another focus session.');
+        this.flashTabTitle();
+        this.timerDisplay.textContent = "Back to Work!";
+        
+        document.body.className = 'timer-work';
+        this.updatePomodoroStatus();
+        
+        // Reset time tracking and automatically start work
+        this.startTime = null;
+        this.pausedTime = null;
+        this.totalPausedDuration = 0;
+        
+        setTimeout(() => {
+            this.startWorkTimer();
+        }, this.CONSTANTS.COMPLETION_DELAY);
+    }
+    
+    startBreakTimer() {
+        this.isRunning = true;
+        this.isPaused = false;
+        this.startTime = Date.now();
+        this.totalPausedDuration = 0;
+        
+        this.startBtn.textContent = 'On Break...';
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = false;
+        this.timeInput.disabled = true;
+        this.unitSelector.disabled = true;
+        this.hiddenControls.classList.add('active');
+        
+        this.timerDisplay.classList.add('running');
+        this.timerDisplay.classList.remove('paused', 'completed');
+        document.body.className = 'timer-break';
+        
+        this.timer = setInterval(() => this.tick(), this.CONSTANTS.UPDATE_INTERVAL);
+    }
+    
+    startWorkTimer() {
+        this.isRunning = true;
+        this.isPaused = false;
+        this.startTime = Date.now();
+        this.totalPausedDuration = 0;
+        
+        this.startBtn.textContent = 'Growing...';
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = false;
+        this.timeInput.disabled = true;
+        this.unitSelector.disabled = true;
+        this.hiddenControls.classList.add('active');
+        
+        this.timerDisplay.classList.add('running');
+        this.timerDisplay.classList.remove('paused', 'completed');
+        document.body.className = 'timer-running';
+        
+        this.timer = setInterval(() => this.tick(), this.CONSTANTS.UPDATE_INTERVAL);
     }
     
     advancePlantStage() {
@@ -518,10 +679,10 @@ class FocusTimer {
         }
     }
     
-    showBrowserNotification() {
+    showBrowserNotification(title = 'Focus Timer Complete! 🎉', body = 'Great job! Your focus session is complete.') {
         if ('Notification' in window && Notification.permission === 'granted') {
-            const notification = new Notification('Focus Timer Complete! 🎉', {
-                body: 'Great job! Your focus session is complete.',
+            const notification = new Notification(title, {
+                body: body,
                 icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌱</text></svg>',
                 requireInteraction: true,
                 tag: 'focus-timer'
@@ -534,6 +695,40 @@ class FocusTimer {
             
             // Auto-close after 10 seconds
             setTimeout(() => notification.close(), this.CONSTANTS.NOTIFICATION_AUTO_CLOSE);
+        }
+    }
+    
+    playChimeSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create a gentle bell-like chime sequence for break-to-work transition
+            const frequencies = [880, 1174.66, 1396.91]; // A5, D6, F6 (pleasing chime)
+            const durations = [0.4, 0.4, 0.8];
+            
+            frequencies.forEach((freq, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = freq;
+                oscillator.type = 'sine';
+                
+                const startTime = audioContext.currentTime + (index * 0.3);
+                const duration = durations[index];
+                
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            });
+        } catch (error) {
+            // Fallback for browsers that don't support Web Audio API
+            console.log('Break complete! Back to work! 🌱');
         }
     }
     
@@ -606,15 +801,57 @@ class FocusTimer {
         });
     }
 
+    togglePomodoroMode() {
+        this.pomodoroMode = this.pomodoroToggle.checked;
+        localStorage.setItem('pomodoroMode', this.pomodoroMode.toString());
+        
+        if (this.pomodoroMode) {
+            // Reset to work mode when enabling
+            this.isBreakTime = false;
+            this.cycleCount = 1;
+            localStorage.setItem('cycleCount', '1');
+            this.originalWorkDuration = 0;
+        } else {
+            // Clear Pomodoro state when disabling
+            this.isBreakTime = false;
+            this.cycleCount = 1;
+            this.originalWorkDuration = 0;
+        }
+        
+        this.updatePomodoroStatus();
+    }
+    
+    updatePomodoroToggle() {
+        if (this.pomodoroToggle) {
+            this.pomodoroToggle.checked = this.pomodoroMode;
+        }
+    }
+    
+    updatePomodoroStatus() {
+        if (!this.pomodoroStatus || !this.modeText || !this.cycleCountElement) return;
+        
+        if (this.pomodoroMode) {
+            this.pomodoroStatus.style.display = 'block';
+            this.modeText.textContent = this.isBreakTime ? 'Break Time' : 'Work Time';
+            this.cycleCountElement.textContent = `Cycle ${this.cycleCount}`;
+            
+            // Update visual styling based on mode
+            this.pomodoroStatus.className = this.isBreakTime ? 'pomodoro-status break-mode' : 'pomodoro-status work-mode';
+        } else {
+            this.pomodoroStatus.style.display = 'none';
+        }
+    }
+
     verifyElements() {
         const requiredElements = [
             'plantSelectorBtn', 'plantModal', 'plantModalOverlay', 
-            'plantModalClose', 'plantEmoji', 'stageIndicator'
+            'plantModalClose', 'plantEmoji', 'stageIndicator',
+            'pomodoroToggle', 'pomodoroStatus', 'modeText', 'cycleCountElement'
         ];
         
         requiredElements.forEach(element => {
             if (!this[element]) {
-                console.warn(`Element ${element} not found. Plant selection may not work properly.`);
+                console.warn(`Element ${element} not found. Plant selection or Pomodoro mode may not work properly.`);
             }
         });
 

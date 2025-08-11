@@ -53,6 +53,14 @@
                 Total Focus Time: <span id="total-hours">0</span> hours
             </section>
 
+            <!-- Pomodoro Status Display -->
+            <section class="pomodoro-status" id="pomodoro-status" aria-label="Pomodoro Status" style="display: none;">
+                <div class="pomodoro-mode-indicator" id="pomodoro-mode-indicator">
+                    <span class="mode-text" id="mode-text">Work Time</span>
+                    <span class="cycle-count" id="cycle-count">Cycle 1</span>
+                </div>
+            </section>
+
             <!-- Timer Settings -->
             <section class="timer-settings" aria-label="Timer Configuration">
                 <div class="settings-row">
@@ -72,6 +80,15 @@
                         <span class="plant-selector-icon">🌱</span>
                         <span class="plant-selector-text">Choose Plant</span>
                     </button>
+                </div>
+                <div class="settings-row">
+                    <label for="pomodoro-toggle">Pomodoro Mode:</label>
+                    <div class="pomodoro-toggle-container">
+                        <label class="toggle-switch" for="pomodoro-toggle">
+                            <input type="checkbox" id="pomodoro-toggle" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
                 </div>
             </section>
             
