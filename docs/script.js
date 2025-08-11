@@ -10,7 +10,9 @@ class FocusTimer {
             NOTIFICATION_AUTO_CLOSE: 10000,
             PLANT_STAGES: 6,
             CELEBRATION_DURATION: 2000,
-            BREAK_DURATION_DEFAULT: 2
+            BREAK_DURATION_DEFAULT: 2,
+            EXTENDED_BREAK_DURATION_DEFAULT: 15,
+            CYCLES_BEFORE_EXTENDED_BREAK: 4
         };
 
         // Plant types with their growth stages
@@ -64,6 +66,7 @@ class FocusTimer {
         // Pomodoro Mode state
         this.pomodoroMode = localStorage.getItem('pomodoroMode') === 'true' || false;
         this.isBreakTime = false;
+        this.isExtendedBreak = false;
         
         // Ensure cycle count is always a valid positive integer
         const storedCycleCount = localStorage.getItem('cycleCount');
@@ -75,6 +78,11 @@ class FocusTimer {
         const storedBreakTime = localStorage.getItem('breakTimeMinutes');
         this.breakTimeMinutes = storedBreakTime ? Math.min(60, Math.max(1, parseInt(storedBreakTime) || this.CONSTANTS.BREAK_DURATION_DEFAULT)) : this.CONSTANTS.BREAK_DURATION_DEFAULT;
         this.breakDuration = this.breakTimeMinutes * 60 * 1000;
+        
+        // Ensure extended break time is always a valid number between 1 and 120
+        const storedExtendedBreakTime = localStorage.getItem('extendedBreakTimeMinutes');
+        this.extendedBreakTimeMinutes = storedExtendedBreakTime ? Math.min(120, Math.max(1, parseInt(storedExtendedBreakTime) || this.CONSTANTS.EXTENDED_BREAK_DURATION_DEFAULT)) : this.CONSTANTS.EXTENDED_BREAK_DURATION_DEFAULT;
+        this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
         
         // Store original page title
         this.originalTitle = document.title;
@@ -113,6 +121,8 @@ class FocusTimer {
         this.cycleCountElement = document.getElementById('cycle-count');
         this.breakTimeInput = document.getElementById('break-time-input');
         this.pomodoroBreakSetting = document.getElementById('pomodoro-break-setting');
+        this.extendedBreakTimeInput = document.getElementById('extended-break-time-input');
+        this.pomodoroExtendedBreakSetting = document.getElementById('pomodoro-extended-break-setting');
         
         // Initialize timer with input value
         this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
@@ -129,6 +139,7 @@ class FocusTimer {
         this.updatePomodoroToggle();
         this.updatePomodoroStatus();
         this.updateBreakTimeInput();
+        this.updateExtendedBreakTimeInput();
         this.updateBreakSettingVisibility();
         
         // Handle page visibility changes to update timer when returning to tab
@@ -193,6 +204,10 @@ class FocusTimer {
         // Break time input listener
         this.breakTimeInput.addEventListener('input', () => this.updateBreakTimeFromInput());
         this.breakTimeInput.addEventListener('change', () => this.updateBreakTimeFromInput());
+        
+        // Extended break time input listener
+        this.extendedBreakTimeInput.addEventListener('input', () => this.updateExtendedBreakTimeFromInput());
+        this.extendedBreakTimeInput.addEventListener('change', () => this.updateExtendedBreakTimeFromInput());
 
         // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
@@ -451,15 +466,25 @@ class FocusTimer {
             this.showCelebration();
         }
         
+        // Check if this should be an extended break (every 4th cycle)
+        this.isExtendedBreak = (this.cycleCount % this.CONSTANTS.CYCLES_BEFORE_EXTENDED_BREAK === 0);
         this.isBreakTime = true;
-        this.duration = this.breakDuration;
+        this.duration = this.isExtendedBreak ? this.extendedBreakDuration : this.breakDuration;
+        
+        const breakType = this.isExtendedBreak ? 'Extended Break' : 'Break';
+        const breakMessage = this.isExtendedBreak ? 
+            `Work Complete! Time for an extended break! 🏖️` : 
+            'Work Complete! Break time! 🎉';
+        const breakDescription = this.isExtendedBreak ? 
+            'Great job completing 4 cycles! Enjoy your longer break.' : 
+            'Great job! Starting your break.';
         
         this.playNotification();
-        this.showBrowserNotification('Work Complete! Break time! 🎉', 'Great job! Starting your break.');
+        this.showBrowserNotification(breakMessage, breakDescription);
         this.flashTabTitle();
-        this.timerDisplay.textContent = "Break Time!";
+        this.timerDisplay.textContent = this.isExtendedBreak ? "Extended Break Time!" : "Break Time!";
         
-        document.body.className = 'timer-break';
+        document.body.className = this.isExtendedBreak ? 'timer-extended-break' : 'timer-break';
         this.updatePomodoroStatus();
         
         // Reset time tracking and automatically start break
@@ -474,6 +499,7 @@ class FocusTimer {
     
     transitionToWork() {
         this.isBreakTime = false;
+        this.isExtendedBreak = false;
         this.duration = this.originalWorkDuration;
         this.cycleCount = Math.max(1, (this.cycleCount || 0) + 1);
         localStorage.setItem('cycleCount', this.cycleCount.toString());
@@ -872,14 +898,30 @@ class FocusTimer {
         
         if (this.pomodoroMode) {
             this.pomodoroStatus.style.display = 'block';
-            this.modeText.textContent = this.isBreakTime ? 'Break Time' : 'Work Time';
             
-            // Ensure cycle count is a valid number
+            // Update mode text based on current state
+            if (this.isBreakTime) {
+                this.modeText.textContent = this.isExtendedBreak ? 'Extended Break' : 'Break Time';
+            } else {
+                this.modeText.textContent = 'Work Time';
+            }
+            
+            // Ensure cycle count is a valid number and show next cycle info during extended breaks
             const safeyCycleCount = Math.max(1, parseInt(this.cycleCount) || 1);
-            this.cycleCountElement.textContent = `Cycle ${safeyCycleCount}`;
+            if (this.isExtendedBreak) {
+                this.cycleCountElement.textContent = `After Cycle ${safeyCycleCount}`;
+            } else {
+                this.cycleCountElement.textContent = `Cycle ${safeyCycleCount}`;
+            }
             
             // Update visual styling based on mode
-            this.pomodoroStatus.className = this.isBreakTime ? 'pomodoro-status break-mode' : 'pomodoro-status work-mode';
+            if (this.isExtendedBreak) {
+                this.pomodoroStatus.className = 'pomodoro-status extended-break-mode';
+            } else if (this.isBreakTime) {
+                this.pomodoroStatus.className = 'pomodoro-status break-mode';
+            } else {
+                this.pomodoroStatus.className = 'pomodoro-status work-mode';
+            }
         } else {
             this.pomodoroStatus.style.display = 'none';
         }
@@ -904,9 +946,31 @@ class FocusTimer {
         }
     }
     
+    updateExtendedBreakTimeFromInput() {
+        const inputValue = parseInt(this.extendedBreakTimeInput.value);
+        
+        if (inputValue >= 1 && inputValue <= 120) {
+            this.extendedBreakTimeMinutes = inputValue;
+            this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
+            localStorage.setItem('extendedBreakTimeMinutes', this.extendedBreakTimeMinutes.toString());
+        } else {
+            // Reset to valid value if input is invalid
+            this.extendedBreakTimeInput.value = this.extendedBreakTimeMinutes;
+        }
+    }
+    
+    updateExtendedBreakTimeInput() {
+        if (this.extendedBreakTimeInput) {
+            this.extendedBreakTimeInput.value = this.extendedBreakTimeMinutes;
+        }
+    }
+    
     updateBreakSettingVisibility() {
         if (this.pomodoroBreakSetting) {
             this.pomodoroBreakSetting.style.display = this.pomodoroMode ? 'flex' : 'none';
+        }
+        if (this.pomodoroExtendedBreakSetting) {
+            this.pomodoroExtendedBreakSetting.style.display = this.pomodoroMode ? 'flex' : 'none';
         }
     }
     
@@ -914,20 +978,25 @@ class FocusTimer {
         // Reset all Pomodoro-related data
         this.pomodoroMode = false;
         this.isBreakTime = false;
+        this.isExtendedBreak = false;
         this.cycleCount = 1;
         this.originalWorkDuration = 0;
         this.breakTimeMinutes = this.CONSTANTS.BREAK_DURATION_DEFAULT;
         this.breakDuration = this.breakTimeMinutes * 60 * 1000;
+        this.extendedBreakTimeMinutes = this.CONSTANTS.EXTENDED_BREAK_DURATION_DEFAULT;
+        this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
         
         // Clear localStorage
         localStorage.removeItem('pomodoroMode');
         localStorage.removeItem('cycleCount');
         localStorage.removeItem('breakTimeMinutes');
+        localStorage.removeItem('extendedBreakTimeMinutes');
         
         // Update UI
         this.updatePomodoroToggle();
         this.updatePomodoroStatus();
         this.updateBreakTimeInput();
+        this.updateExtendedBreakTimeInput();
         this.updateBreakSettingVisibility();
         
         console.log('Pomodoro data reset successfully');
@@ -938,7 +1007,7 @@ class FocusTimer {
             'plantSelectorBtn', 'plantModal', 'plantModalOverlay', 
             'plantModalClose', 'plantEmoji', 'stageIndicator',
             'pomodoroToggle', 'pomodoroStatus', 'modeText', 'cycleCountElement',
-            'breakTimeInput', 'pomodoroBreakSetting'
+            'breakTimeInput', 'pomodoroBreakSetting', 'extendedBreakTimeInput', 'pomodoroExtendedBreakSetting'
         ];
         
         requiredElements.forEach(element => {

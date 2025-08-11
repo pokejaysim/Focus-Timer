@@ -103,6 +103,10 @@ body.timer-work {
     background: linear-gradient(180deg, #9BC29B 0%, #B8E6B8 100%);
 }
 
+body.timer-extended-break {
+    background: linear-gradient(180deg, #DDA0DD 0%, #E6E6FA 100%);
+}
+
 .app-container {
     max-width: 430px;
     margin: 0 auto;
@@ -607,21 +611,47 @@ body.sidebar-open .app-container {
 }
 
 /* Break Time Input */
-.pomodoro-break-setting {
-    margin-left: 20px;
-    padding-left: 20px;
-    border-left: 3px solid rgba(160, 82, 45, 0.2);
-    background: rgba(160, 82, 45, 0.05);
-    border-radius: 0 15px 15px 0;
+.pomodoro-break-setting,
+.pomodoro-extended-break-setting {
+    position: relative;
+    padding-left: 28px;
+    background: rgba(160, 82, 45, 0.04);
+    border-radius: 0 18px 18px 0;
+    margin-top: 8px;
+}
+
+.pomodoro-break-setting::before,
+.pomodoro-extended-break-setting::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: rgba(160, 82, 45, 0.3);
+    border-radius: 0 2px 2px 0;
+}
+
+.pomodoro-extended-break-setting {
+    background: rgba(160, 82, 45, 0.06);
+    margin-top: 6px;
+}
+
+.pomodoro-extended-break-setting::before {
+    background: rgba(160, 82, 45, 0.4);
+    height: 70%;
 }
 
 .break-input-group {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
-#break-time-input {
+#break-time-input,
+#extended-break-time-input {
     width: 60px;
     padding: 8px 12px;
     border: 2px solid rgba(139, 69, 19, 0.3);
@@ -635,7 +665,13 @@ body.sidebar-open .app-container {
     min-width: 60px;
 }
 
-#break-time-input:focus {
+#extended-break-time-input {
+    width: 70px;
+    min-width: 70px;
+}
+
+#break-time-input:focus,
+#extended-break-time-input:focus {
     outline: none;
     border-color: #A0522D;
     background: white;
@@ -643,7 +679,8 @@ body.sidebar-open .app-container {
     box-shadow: 0 0 0 3px rgba(160, 82, 45, 0.1);
 }
 
-#break-time-input:hover {
+#break-time-input:hover,
+#extended-break-time-input:hover {
     border-color: #8B4513;
 }
 
@@ -652,6 +689,20 @@ body.sidebar-open .app-container {
     color: #2C3E50;
     font-weight: 500;
     opacity: 0.8;
+    white-space: nowrap;
+}
+
+.extended-break-hint {
+    font-size: 11px;
+    color: rgba(44, 62, 80, 0.65);
+    font-weight: 500;
+    font-style: italic;
+    background: rgba(160, 82, 45, 0.08);
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-left: 8px;
+    white-space: nowrap;
+    border: 1px solid rgba(160, 82, 45, 0.15);
 }
 
 /* Total Focus Display */
@@ -1008,6 +1059,22 @@ body.modal-open {
     color: #1976D2;
 }
 
+.pomodoro-status.extended-break-mode {
+    background: rgba(221, 160, 221, 0.15);
+    border-color: #DDA0DD;
+    box-shadow: 0 6px 16px rgba(221, 160, 221, 0.2);
+}
+
+.pomodoro-status.extended-break-mode .mode-text {
+    color: #7B1FA2;
+}
+
+.pomodoro-status.extended-break-mode .cycle-count {
+    background: rgba(221, 160, 221, 0.3);
+    border-color: #DDA0DD;
+    color: #7B1FA2;
+}
+
 /* Preset Buttons */
 .preset-buttons {
     display: flex;
@@ -1249,20 +1316,40 @@ body.modal-open {
         transform: translateX(22px);
     }
 
-    .pomodoro-break-setting {
-        margin-left: var(--spacing-lg);
-        padding-left: var(--spacing-lg);
+    .pomodoro-break-setting,
+    .pomodoro-extended-break-setting {
+        padding-left: 20px;
+        margin-top: 6px;
     }
 
-    #break-time-input {
+    .pomodoro-break-setting::before,
+    .pomodoro-extended-break-setting::before {
+        width: 2px;
+        height: 50%;
+    }
+
+    #break-time-input,
+    #extended-break-time-input {
         width: 50px;
         font-size: var(--font-size-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-sm) 8px;
         min-width: 50px;
+    }
+
+    #extended-break-time-input {
+        width: 55px;
+        min-width: 55px;
     }
 
     .break-unit {
         font-size: var(--font-size-xs);
+    }
+
+    .extended-break-hint {
+        font-size: 9px;
+        padding: 1px 6px;
+        margin-left: 6px;
+        border-radius: 6px;
     }
 }
 
