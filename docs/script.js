@@ -64,9 +64,16 @@ class FocusTimer {
         // Pomodoro Mode state
         this.pomodoroMode = localStorage.getItem('pomodoroMode') === 'true' || false;
         this.isBreakTime = false;
-        this.cycleCount = parseInt(localStorage.getItem('cycleCount') || '1');
+        
+        // Ensure cycle count is always a valid positive integer
+        const storedCycleCount = localStorage.getItem('cycleCount');
+        this.cycleCount = storedCycleCount ? Math.max(1, parseInt(storedCycleCount) || 1) : 1;
+        
         this.originalWorkDuration = 0;
-        this.breakTimeMinutes = parseInt(localStorage.getItem('breakTimeMinutes') || this.CONSTANTS.BREAK_DURATION_DEFAULT.toString());
+        
+        // Ensure break time is always a valid number between 1 and 60
+        const storedBreakTime = localStorage.getItem('breakTimeMinutes');
+        this.breakTimeMinutes = storedBreakTime ? Math.min(60, Math.max(1, parseInt(storedBreakTime) || this.CONSTANTS.BREAK_DURATION_DEFAULT)) : this.CONSTANTS.BREAK_DURATION_DEFAULT;
         this.breakDuration = this.breakTimeMinutes * 60 * 1000;
         
         // Store original page title
@@ -131,14 +138,22 @@ class FocusTimer {
             }
         });
         
-        // Add keyboard shortcut to reset plant progress (Ctrl/Cmd + Shift + R)
+        // Add keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Reset plant progress (Ctrl/Cmd + Shift + R)
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
                 e.preventDefault();
                 if (confirm('Reset your plant progress? This will set your plant back to stage 0.')) {
                     this.plantStage = 0;
                     localStorage.setItem('plantStage', '0');
                     this.updatePlantStage();
+                }
+            }
+            // Reset Pomodoro data (Ctrl/Cmd + Shift + P)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+                e.preventDefault();
+                if (confirm('Reset Pomodoro data? This will clear cycle count and break settings.')) {
+                    this.resetPomodoroData();
                 }
             }
         });
@@ -460,7 +475,7 @@ class FocusTimer {
     transitionToWork() {
         this.isBreakTime = false;
         this.duration = this.originalWorkDuration;
-        this.cycleCount++;
+        this.cycleCount = Math.max(1, (this.cycleCount || 0) + 1);
         localStorage.setItem('cycleCount', this.cycleCount.toString());
         
         this.playChimeSound();
@@ -858,7 +873,10 @@ class FocusTimer {
         if (this.pomodoroMode) {
             this.pomodoroStatus.style.display = 'block';
             this.modeText.textContent = this.isBreakTime ? 'Break Time' : 'Work Time';
-            this.cycleCountElement.textContent = `Cycle ${this.cycleCount}`;
+            
+            // Ensure cycle count is a valid number
+            const safeyCycleCount = Math.max(1, parseInt(this.cycleCount) || 1);
+            this.cycleCountElement.textContent = `Cycle ${safeyCycleCount}`;
             
             // Update visual styling based on mode
             this.pomodoroStatus.className = this.isBreakTime ? 'pomodoro-status break-mode' : 'pomodoro-status work-mode';
@@ -890,6 +908,29 @@ class FocusTimer {
         if (this.pomodoroBreakSetting) {
             this.pomodoroBreakSetting.style.display = this.pomodoroMode ? 'flex' : 'none';
         }
+    }
+    
+    resetPomodoroData() {
+        // Reset all Pomodoro-related data
+        this.pomodoroMode = false;
+        this.isBreakTime = false;
+        this.cycleCount = 1;
+        this.originalWorkDuration = 0;
+        this.breakTimeMinutes = this.CONSTANTS.BREAK_DURATION_DEFAULT;
+        this.breakDuration = this.breakTimeMinutes * 60 * 1000;
+        
+        // Clear localStorage
+        localStorage.removeItem('pomodoroMode');
+        localStorage.removeItem('cycleCount');
+        localStorage.removeItem('breakTimeMinutes');
+        
+        // Update UI
+        this.updatePomodoroToggle();
+        this.updatePomodoroStatus();
+        this.updateBreakTimeInput();
+        this.updateBreakSettingVisibility();
+        
+        console.log('Pomodoro data reset successfully');
     }
 
     verifyElements() {

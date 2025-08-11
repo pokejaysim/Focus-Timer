@@ -934,52 +934,78 @@ body.modal-open {
 
 /* Pomodoro Status Display */
 .pomodoro-status {
-    background: rgba(255, 255, 255, 0.8);
-    padding: 16px 32px;
-    border-radius: 30px;
-    margin-bottom: 20px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(139, 69, 19, 0.2);
-    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 12px 28px;
+    border-radius: 25px;
+    margin: 0 auto 25px auto;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    border: 2px solid rgba(139, 69, 19, 0.15);
+    transition: all 0.4s ease;
+    max-width: 280px;
+    width: 100%;
+    text-align: center;
 }
 
 .pomodoro-status.work-mode {
-    background: rgba(155, 194, 155, 0.2);
+    background: rgba(155, 194, 155, 0.15);
     border-color: var(--color-secondary);
+    box-shadow: 0 6px 16px rgba(143, 188, 143, 0.2);
 }
 
 .pomodoro-status.break-mode {
-    background: rgba(135, 206, 235, 0.2);
+    background: rgba(135, 206, 235, 0.15);
     border-color: #87CEEB;
+    box-shadow: 0 6px 16px rgba(135, 206, 235, 0.2);
 }
 
 .pomodoro-mode-indicator {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
     color: #2C3E50;
+    gap: 12px;
 }
 
 .mode-text {
-    font-weight: 600;
-    font-size: 18px;
+    font-weight: 700;
+    font-size: 17px;
+    flex: 1;
+    text-align: left;
 }
 
 .cycle-count {
-    font-size: 14px;
-    opacity: 0.8;
-    font-weight: 500;
+    font-size: 13px;
+    opacity: 0.75;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(139, 69, 19, 0.1);
+    text-align: right;
+    white-space: nowrap;
 }
 
 .pomodoro-status.work-mode .mode-text {
-    color: var(--color-secondary);
+    color: #2E7D32;
+}
+
+.pomodoro-status.work-mode .cycle-count {
+    background: rgba(155, 194, 155, 0.3);
+    border-color: var(--color-secondary);
+    color: #2E7D32;
 }
 
 .pomodoro-status.break-mode .mode-text {
-    color: #4682B4;
+    color: #1976D2;
+}
+
+.pomodoro-status.break-mode .cycle-count {
+    background: rgba(135, 206, 235, 0.3);
+    border-color: #87CEEB;
+    color: #1976D2;
 }
 
 /* Preset Buttons */
@@ -1188,16 +1214,23 @@ body.modal-open {
     }
 
     .pomodoro-status {
-        padding: var(--spacing-md) var(--spacing-xl);
-        font-size: var(--font-size-sm);
+        padding: 10px 20px;
+        margin-bottom: 20px;
+        max-width: 260px;
+    }
+
+    .pomodoro-mode-indicator {
+        font-size: 14px;
+        gap: 10px;
     }
 
     .mode-text {
-        font-size: var(--font-size-base);
+        font-size: 15px;
     }
 
     .cycle-count {
-        font-size: var(--font-size-xs);
+        font-size: 11px;
+        padding: 3px 8px;
     }
 
     .toggle-switch {
