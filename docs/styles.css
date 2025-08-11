@@ -618,6 +618,9 @@ body.sidebar-open .app-container {
     background: rgba(160, 82, 45, 0.04);
     border-radius: 0 18px 18px 0;
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .pomodoro-break-setting::before,
@@ -647,7 +650,7 @@ body.sidebar-open .app-container {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 #break-time-input,
@@ -1320,12 +1323,18 @@ body.modal-open {
     .pomodoro-extended-break-setting {
         padding-left: 20px;
         margin-top: 6px;
+        justify-content: space-between;
     }
 
     .pomodoro-break-setting::before,
     .pomodoro-extended-break-setting::before {
         width: 2px;
         height: 50%;
+    }
+
+    .break-input-group {
+        flex-wrap: nowrap;
+        gap: 6px;
     }
 
     #break-time-input,
@@ -1346,10 +1355,10 @@ body.modal-open {
     }
 
     .extended-break-hint {
-        font-size: 9px;
-        padding: 1px 6px;
-        margin-left: 6px;
-        border-radius: 6px;
+        font-size: 8px;
+        padding: 1px 4px;
+        margin-left: 4px;
+        border-radius: 4px;
     }
 }
 
