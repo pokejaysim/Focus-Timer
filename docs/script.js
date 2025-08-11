@@ -66,7 +66,8 @@ class FocusTimer {
         this.isBreakTime = false;
         this.cycleCount = parseInt(localStorage.getItem('cycleCount') || '1');
         this.originalWorkDuration = 0;
-        this.breakDuration = this.CONSTANTS.BREAK_DURATION_DEFAULT * 60 * 1000;
+        this.breakTimeMinutes = parseInt(localStorage.getItem('breakTimeMinutes') || this.CONSTANTS.BREAK_DURATION_DEFAULT.toString());
+        this.breakDuration = this.breakTimeMinutes * 60 * 1000;
         
         // Store original page title
         this.originalTitle = document.title;
@@ -103,6 +104,8 @@ class FocusTimer {
         this.pomodoroStatus = document.getElementById('pomodoro-status');
         this.modeText = document.getElementById('mode-text');
         this.cycleCountElement = document.getElementById('cycle-count');
+        this.breakTimeInput = document.getElementById('break-time-input');
+        this.pomodoroBreakSetting = document.getElementById('pomodoro-break-setting');
         
         // Initialize timer with input value
         this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
@@ -118,6 +121,8 @@ class FocusTimer {
         this.updatePlantOptionsSelection();
         this.updatePomodoroToggle();
         this.updatePomodoroStatus();
+        this.updateBreakTimeInput();
+        this.updateBreakSettingVisibility();
         
         // Handle page visibility changes to update timer when returning to tab
         document.addEventListener('visibilitychange', () => {
@@ -169,6 +174,10 @@ class FocusTimer {
 
         // Pomodoro Mode toggle listener
         this.pomodoroToggle.addEventListener('change', () => this.togglePomodoroMode());
+        
+        // Break time input listener
+        this.breakTimeInput.addEventListener('input', () => this.updateBreakTimeFromInput());
+        this.breakTimeInput.addEventListener('change', () => this.updateBreakTimeFromInput());
 
         // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
@@ -834,6 +843,7 @@ class FocusTimer {
         }
         
         this.updatePomodoroStatus();
+        this.updateBreakSettingVisibility();
     }
     
     updatePomodoroToggle() {
@@ -857,11 +867,37 @@ class FocusTimer {
         }
     }
 
+    updateBreakTimeFromInput() {
+        const inputValue = parseInt(this.breakTimeInput.value);
+        
+        if (inputValue >= 1 && inputValue <= 60) {
+            this.breakTimeMinutes = inputValue;
+            this.breakDuration = this.breakTimeMinutes * 60 * 1000;
+            localStorage.setItem('breakTimeMinutes', this.breakTimeMinutes.toString());
+        } else {
+            // Reset to valid value if input is invalid
+            this.breakTimeInput.value = this.breakTimeMinutes;
+        }
+    }
+    
+    updateBreakTimeInput() {
+        if (this.breakTimeInput) {
+            this.breakTimeInput.value = this.breakTimeMinutes;
+        }
+    }
+    
+    updateBreakSettingVisibility() {
+        if (this.pomodoroBreakSetting) {
+            this.pomodoroBreakSetting.style.display = this.pomodoroMode ? 'flex' : 'none';
+        }
+    }
+
     verifyElements() {
         const requiredElements = [
             'plantSelectorBtn', 'plantModal', 'plantModalOverlay', 
             'plantModalClose', 'plantEmoji', 'stageIndicator',
-            'pomodoroToggle', 'pomodoroStatus', 'modeText', 'cycleCountElement'
+            'pomodoroToggle', 'pomodoroStatus', 'modeText', 'cycleCountElement',
+            'breakTimeInput', 'pomodoroBreakSetting'
         ];
         
         requiredElements.forEach(element => {
