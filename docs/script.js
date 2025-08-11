@@ -197,6 +197,11 @@ class FocusTimer {
             this.updateDisplay();
             this.updateProgressBar();
             
+            // Update original work duration if in Pomodoro mode and not currently in break
+            if (this.pomodoroMode && !this.isBreakTime) {
+                this.originalWorkDuration = this.duration;
+            }
+            
             // Clear active preset button state when manually entering time
             this.presetButtons.forEach(btn => btn.classList.remove('active'));
         } else if (this.timeInput.value === '') {
@@ -205,6 +210,11 @@ class FocusTimer {
             this.duration = this.convertToMilliseconds(1, this.timeUnit);
             this.updateDisplay();
             this.updateProgressBar();
+            
+            // Update original work duration if in Pomodoro mode and not currently in break
+            if (this.pomodoroMode && !this.isBreakTime) {
+                this.originalWorkDuration = this.duration;
+            }
         }
     }
     
@@ -213,8 +223,8 @@ class FocusTimer {
             this.isRunning = true;
             this.isPaused = false;
             
-            // Store original work duration for Pomodoro mode
-            if (this.pomodoroMode && !this.originalWorkDuration) {
+            // Store original work duration for Pomodoro mode (only when starting work, not break)
+            if (this.pomodoroMode && !this.isBreakTime) {
                 this.originalWorkDuration = this.duration;
             }
             
@@ -656,6 +666,11 @@ class FocusTimer {
         this.updateDisplay();
         this.updateProgressBar();
         
+        // Update original work duration if in Pomodoro mode and not currently in break
+        if (this.pomodoroMode && !this.isBreakTime) {
+            this.originalWorkDuration = this.duration;
+        }
+        
         // Update active state
         this.presetButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
@@ -806,11 +821,11 @@ class FocusTimer {
         localStorage.setItem('pomodoroMode', this.pomodoroMode.toString());
         
         if (this.pomodoroMode) {
-            // Reset to work mode when enabling
+            // Reset to work mode when enabling and set original work duration
             this.isBreakTime = false;
             this.cycleCount = 1;
             localStorage.setItem('cycleCount', '1');
-            this.originalWorkDuration = 0;
+            this.originalWorkDuration = this.duration; // Set to current duration
         } else {
             // Clear Pomodoro state when disabling
             this.isBreakTime = false;
