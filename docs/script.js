@@ -266,12 +266,12 @@ class FocusTimer {
         // Pomodoro Mode toggle listener
         this.pomodoroToggle.addEventListener('change', () => this.togglePomodoroMode());
         
-        // Break time input listener
-        this.breakTimeInput.addEventListener('input', () => this.updateBreakTimeFromInput());
+        // Break time input listener - only validate when user finishes editing
+        this.breakTimeInput.addEventListener('blur', () => this.updateBreakTimeFromInput());
         this.breakTimeInput.addEventListener('change', () => this.updateBreakTimeFromInput());
         
-        // Extended break time input listener
-        this.extendedBreakTimeInput.addEventListener('input', () => this.updateExtendedBreakTimeFromInput());
+        // Extended break time input listener - only validate when user finishes editing
+        this.extendedBreakTimeInput.addEventListener('blur', () => this.updateExtendedBreakTimeFromInput());
         this.extendedBreakTimeInput.addEventListener('change', () => this.updateExtendedBreakTimeFromInput());
         
         // Sound customization listeners
