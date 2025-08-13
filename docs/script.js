@@ -84,6 +84,50 @@ class FocusTimer {
         this.extendedBreakTimeMinutes = storedExtendedBreakTime ? Math.min(120, Math.max(1, parseInt(storedExtendedBreakTime) || this.CONSTANTS.EXTENDED_BREAK_DURATION_DEFAULT)) : this.CONSTANTS.EXTENDED_BREAK_DURATION_DEFAULT;
         this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
         
+        // Sound settings
+        this.soundTheme = localStorage.getItem('soundTheme') || 'chime';
+        this.volume = parseFloat(localStorage.getItem('volume') || '0.5');
+        
+        // Dark mode setting
+        this.darkMode = localStorage.getItem('darkMode') === 'true' || false;
+        
+        // Analytics data
+        this.initializeAnalytics();
+        
+        // Sound themes configuration
+        this.SOUND_THEMES = {
+            chime: {
+                name: 'Classic Chime',
+                frequencies: [523.25, 659.25, 783.99], // C5, E5, G5
+                durations: [0.3, 0.3, 0.6],
+                type: 'sine'
+            },
+            nature: {
+                name: 'Nature Sounds',
+                frequencies: [440, 554.37, 659.25], // A4, C#5, E5
+                durations: [0.4, 0.4, 0.8],
+                type: 'triangle'
+            },
+            bell: {
+                name: 'Temple Bell',
+                frequencies: [293.66, 369.99, 440], // D4, F#4, A4
+                durations: [0.6, 0.6, 1.2],
+                type: 'sine'
+            },
+            soft: {
+                name: 'Soft Tone',
+                frequencies: [349.23, 415.30, 493.88], // F4, G#4, B4
+                durations: [0.5, 0.5, 1.0],
+                type: 'sine'
+            },
+            off: {
+                name: 'Silent',
+                frequencies: [],
+                durations: [],
+                type: 'sine'
+            }
+        };
+        
         // Store original page title
         this.originalTitle = document.title;
         
@@ -124,6 +168,24 @@ class FocusTimer {
         this.extendedBreakTimeInput = document.getElementById('extended-break-time-input');
         this.pomodoroExtendedBreakSetting = document.getElementById('pomodoro-extended-break-setting');
         
+        // Sound customization elements
+        this.soundSelector = document.getElementById('sound-selector');
+        this.volumeSlider = document.getElementById('volume-slider');
+        this.volumeValue = document.getElementById('volume-value');
+        this.volumeTestBtn = document.getElementById('volume-test-btn');
+        
+        // Dark mode elements
+        this.darkModeToggle = document.getElementById('dark-mode-toggle');
+        this.themeIcon = document.getElementById('theme-icon');
+        
+        // Analytics elements
+        this.analyticsBtn = document.getElementById('analytics-btn');
+        this.analyticsModal = document.getElementById('analytics-modal');
+        this.analyticsModalOverlay = document.getElementById('analytics-modal-overlay');
+        this.analyticsModalClose = document.getElementById('analytics-modal-close');
+        this.exportBtn = document.getElementById('export-btn');
+        this.resetStatsBtn = document.getElementById('reset-stats-btn');
+        
         // Initialize timer with input value
         this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
         this.timeUnit = this.unitSelector.value;
@@ -141,6 +203,9 @@ class FocusTimer {
         this.updateBreakTimeInput();
         this.updateExtendedBreakTimeInput();
         this.updateBreakSettingVisibility();
+        this.updateSoundSelector();
+        this.updateVolumeSlider();
+        this.updateDarkMode();
         
         // Handle page visibility changes to update timer when returning to tab
         document.addEventListener('visibilitychange', () => {
@@ -208,11 +273,34 @@ class FocusTimer {
         // Extended break time input listener
         this.extendedBreakTimeInput.addEventListener('input', () => this.updateExtendedBreakTimeFromInput());
         this.extendedBreakTimeInput.addEventListener('change', () => this.updateExtendedBreakTimeFromInput());
+        
+        // Sound customization listeners
+        this.soundSelector.addEventListener('change', () => this.updateSoundTheme());
+        this.volumeSlider.addEventListener('input', () => this.updateVolumeFromSlider());
+        this.volumeTestBtn.addEventListener('click', () => this.testSound());
+        
+        // Dark mode listener
+        this.darkModeToggle.addEventListener('change', () => this.toggleDarkMode());
+        
+        // Analytics listeners
+        this.analyticsBtn.addEventListener('click', () => this.openAnalyticsModal());
+        this.analyticsModalClose.addEventListener('click', () => this.closeAnalyticsModal());
+        this.analyticsModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.analyticsModalOverlay) {
+                this.closeAnalyticsModal();
+            }
+        });
+        this.exportBtn.addEventListener('click', () => this.exportData());
+        this.resetStatsBtn.addEventListener('click', () => this.resetStats());
 
         // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.plantModalOverlay.classList.contains('show')) {
-                this.closePlantModal();
+            if (e.key === 'Escape') {
+                if (this.plantModalOverlay.classList.contains('show')) {
+                    this.closePlantModal();
+                } else if (this.analyticsModalOverlay.classList.contains('show')) {
+                    this.closeAnalyticsModal();
+                }
             }
         });
 
@@ -408,6 +496,9 @@ class FocusTimer {
         localStorage.setItem('totalFocusHours', this.totalFocusHours.toString());
         this.updateTotalFocusDisplay();
         
+        // Track analytics
+        this.trackSession(sessionHours);
+        
         // Advance plant stage if not at maximum
         if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
             this.advancePlantStage();
@@ -459,6 +550,9 @@ class FocusTimer {
         this.totalFocusHours += sessionHours;
         localStorage.setItem('totalFocusHours', this.totalFocusHours.toString());
         this.updateTotalFocusDisplay();
+        
+        // Track analytics
+        this.trackSession(sessionHours);
         
         // Advance plant stage if not at maximum
         if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
@@ -652,14 +746,15 @@ class FocusTimer {
     }
     
     playNotification() {
+        if (this.soundTheme === 'off') return;
+        
         try {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const soundConfig = this.SOUND_THEMES[this.soundTheme];
             
-            // Create a pleasant 3-tone chime sequence
-            const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 (major chord)
-            const durations = [0.3, 0.3, 0.6];
+            if (!soundConfig || soundConfig.frequencies.length === 0) return;
             
-            frequencies.forEach((freq, index) => {
+            soundConfig.frequencies.forEach((freq, index) => {
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
                 
@@ -667,13 +762,13 @@ class FocusTimer {
                 gainNode.connect(audioContext.destination);
                 
                 oscillator.frequency.value = freq;
-                oscillator.type = 'sine';
+                oscillator.type = soundConfig.type;
                 
                 const startTime = audioContext.currentTime + (index * 0.2);
-                const duration = durations[index];
+                const duration = soundConfig.durations[index];
                 
                 gainNode.gain.setValueAtTime(0, startTime);
-                gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(this.volume, startTime + 0.05);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
                 
                 oscillator.start(startTime);
@@ -764,10 +859,12 @@ class FocusTimer {
     }
     
     playChimeSound() {
+        if (this.soundTheme === 'off') return;
+        
         try {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Create a gentle bell-like chime sequence for break-to-work transition
+            // Use softer chime for break-to-work transition
             const frequencies = [880, 1174.66, 1396.91]; // A5, D6, F6 (pleasing chime)
             const durations = [0.4, 0.4, 0.8];
             
@@ -785,7 +882,7 @@ class FocusTimer {
                 const duration = durations[index];
                 
                 gainNode.gain.setValueAtTime(0, startTime);
-                gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(this.volume * 0.7, startTime + 0.05); // Softer for break transitions
                 gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
                 
                 oscillator.start(startTime);
@@ -1001,13 +1098,304 @@ class FocusTimer {
         
         console.log('Pomodoro data reset successfully');
     }
+    
+    updateSoundTheme() {
+        this.soundTheme = this.soundSelector.value;
+        localStorage.setItem('soundTheme', this.soundTheme);
+    }
+    
+    updateVolumeFromSlider() {
+        this.volume = this.volumeSlider.value / 100;
+        localStorage.setItem('volume', this.volume.toString());
+        this.updateVolumeDisplay();
+    }
+    
+    updateVolumeDisplay() {
+        if (this.volumeValue) {
+            this.volumeValue.textContent = `${Math.round(this.volume * 100)}%`;
+        }
+        
+        // Update volume icon based on level
+        if (this.volumeSlider) {
+            const volumeIcon = document.querySelector('.volume-icon');
+            if (volumeIcon) {
+                if (this.volume === 0) {
+                    volumeIcon.textContent = '🔇';
+                } else if (this.volume < 0.3) {
+                    volumeIcon.textContent = '🔈';
+                } else if (this.volume < 0.7) {
+                    volumeIcon.textContent = '🔉';
+                } else {
+                    volumeIcon.textContent = '🔊';
+                }
+            }
+        }
+    }
+    
+    updateSoundSelector() {
+        if (this.soundSelector) {
+            this.soundSelector.value = this.soundTheme;
+        }
+    }
+    
+    updateVolumeSlider() {
+        if (this.volumeSlider) {
+            this.volumeSlider.value = Math.round(this.volume * 100);
+        }
+        this.updateVolumeDisplay();
+    }
+    
+    testSound() {
+        // Play a quick version of the selected sound theme
+        if (this.soundTheme === 'off') {
+            // Visual feedback for silent mode
+            this.volumeTestBtn.style.animation = 'pulse 0.3s ease-in-out';
+            setTimeout(() => {
+                this.volumeTestBtn.style.animation = '';
+            }, 300);
+            return;
+        }
+        
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const soundConfig = this.SOUND_THEMES[this.soundTheme];
+            
+            if (!soundConfig || soundConfig.frequencies.length === 0) return;
+            
+            // Play just the first tone for testing
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = soundConfig.frequencies[0];
+            oscillator.type = soundConfig.type;
+            
+            const duration = 0.3; // Short test duration
+            
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(this.volume, audioContext.currentTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+            
+            // Visual feedback
+            this.volumeTestBtn.style.animation = 'pulse 0.3s ease-in-out';
+            setTimeout(() => {
+                this.volumeTestBtn.style.animation = '';
+            }, 300);
+            
+        } catch (error) {
+            console.log('Sound test: ', this.SOUND_THEMES[this.soundTheme].name);
+        }
+    }
+    
+    toggleDarkMode() {
+        this.darkMode = this.darkModeToggle.checked;
+        localStorage.setItem('darkMode', this.darkMode.toString());
+        this.applyTheme();
+    }
+    
+    updateDarkMode() {
+        if (this.darkModeToggle) {
+            this.darkModeToggle.checked = this.darkMode;
+        }
+        this.applyTheme();
+    }
+    
+    applyTheme() {
+        if (this.darkMode) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            if (this.themeIcon) {
+                this.themeIcon.textContent = '☀️';
+            }
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (this.themeIcon) {
+                this.themeIcon.textContent = '🌙';
+            }
+        }
+    }
+    
+    // Analytics Methods
+    initializeAnalytics() {
+        // Get analytics data from localStorage
+        this.analytics = JSON.parse(localStorage.getItem('analytics') || '{}');
+        
+        // Initialize default structure
+        if (!this.analytics.sessions) this.analytics.sessions = [];
+        if (!this.analytics.totalSessions) this.analytics.totalSessions = 0;
+        if (!this.analytics.currentStreak) this.analytics.currentStreak = 0;
+        if (!this.analytics.longestStreak) this.analytics.longestStreak = 0;
+        if (!this.analytics.lastSessionDate) this.analytics.lastSessionDate = null;
+        if (!this.analytics.weeklyData) this.analytics.weeklyData = {};
+        
+        this.saveAnalytics();
+    }
+    
+    trackSession(sessionHours) {
+        const now = new Date();
+        const today = now.toDateString();
+        const sessionMinutes = Math.round(sessionHours * 60);
+        
+        // Add session to history
+        this.analytics.sessions.push({
+            date: now.toISOString(),
+            duration: sessionHours,
+            timestamp: now.getTime()
+        });
+        
+        // Update total sessions
+        this.analytics.totalSessions++;
+        
+        // Update streak
+        if (this.analytics.lastSessionDate) {
+            const lastDate = new Date(this.analytics.lastSessionDate);
+            const daysDiff = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysDiff === 0) {
+                // Same day, maintain streak
+            } else if (daysDiff === 1) {
+                // Next day, increment streak
+                this.analytics.currentStreak++;
+            } else {
+                // Gap in sessions, reset streak
+                this.analytics.currentStreak = 1;
+            }
+        } else {
+            // First session
+            this.analytics.currentStreak = 1;
+        }
+        
+        // Update longest streak
+        if (this.analytics.currentStreak > this.analytics.longestStreak) {
+            this.analytics.longestStreak = this.analytics.currentStreak;
+        }
+        
+        // Update weekly data
+        const weekKey = this.getWeekKey(now);
+        const dayIndex = now.getDay();
+        
+        if (!this.analytics.weeklyData[weekKey]) {
+            this.analytics.weeklyData[weekKey] = [0, 0, 0, 0, 0, 0, 0];
+        }
+        
+        this.analytics.weeklyData[weekKey][dayIndex] += sessionHours;
+        
+        // Update last session date
+        this.analytics.lastSessionDate = today;
+        
+        this.saveAnalytics();
+    }
+    
+    getWeekKey(date) {
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - date.getDay());
+        return startOfWeek.toDateString();
+    }
+    
+    saveAnalytics() {
+        localStorage.setItem('analytics', JSON.stringify(this.analytics));
+    }
+    
+    openAnalyticsModal() {
+        this.updateAnalyticsDisplay();
+        this.analyticsModalOverlay.classList.add('show');
+        document.body.classList.add('modal-open');
+    }
+    
+    closeAnalyticsModal() {
+        this.analyticsModalOverlay.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    }
+    
+    updateAnalyticsDisplay() {
+        // Update stat cards
+        document.getElementById('total-sessions').textContent = this.analytics.totalSessions;
+        document.getElementById('current-streak').textContent = this.analytics.currentStreak;
+        document.getElementById('longest-streak').textContent = this.analytics.longestStreak;
+        
+        // Calculate average session duration
+        const avgSessionMinutes = this.analytics.sessions.length > 0 ? 
+            this.analytics.sessions.reduce((sum, session) => sum + session.duration, 0) / this.analytics.sessions.length * 60 : 0;
+        document.getElementById('avg-session').textContent = Math.round(avgSessionMinutes);
+        
+        // Update weekly chart
+        this.updateWeeklyChart();
+    }
+    
+    updateWeeklyChart() {
+        const now = new Date();
+        const weekKey = this.getWeekKey(now);
+        const weekData = this.analytics.weeklyData[weekKey] || [0, 0, 0, 0, 0, 0, 0];
+        const maxHours = Math.max(...weekData, 1); // Prevent division by zero
+        
+        const dayStats = document.querySelectorAll('.day-stat');
+        
+        dayStats.forEach((dayStat, index) => {
+            const hours = weekData[index] || 0;
+            const percentage = (hours / maxHours) * 100;
+            
+            const dayFill = dayStat.querySelector('.day-fill');
+            const dayTime = dayStat.querySelector('.day-time');
+            
+            dayFill.style.height = `${percentage}%`;
+            dayTime.textContent = `${hours.toFixed(1)}h`;
+            
+            // Highlight today
+            if (index === now.getDay()) {
+                dayStat.style.background = 'rgba(160, 82, 45, 0.2)';
+            } else {
+                dayStat.style.background = 'rgba(255, 255, 255, 0.5)';
+            }
+        });
+    }
+    
+    exportData() {
+        const exportData = {
+            analytics: this.analytics,
+            totalFocusHours: this.totalFocusHours,
+            plantStage: this.plantStage,
+            selectedPlant: this.selectedPlant,
+            exportDate: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timer-tree-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    
+    resetStats() {
+        if (confirm('Are you sure you want to reset all statistics? This action cannot be undone.')) {
+            this.analytics = {
+                sessions: [],
+                totalSessions: 0,
+                currentStreak: 0,
+                longestStreak: 0,
+                lastSessionDate: null,
+                weeklyData: {}
+            };
+            this.saveAnalytics();
+            this.updateAnalyticsDisplay();
+        }
+    }
 
     verifyElements() {
         const requiredElements = [
             'plantSelectorBtn', 'plantModal', 'plantModalOverlay', 
             'plantModalClose', 'plantEmoji', 'stageIndicator',
             'pomodoroToggle', 'pomodoroStatus', 'modeText', 'cycleCountElement',
-            'breakTimeInput', 'pomodoroBreakSetting', 'extendedBreakTimeInput', 'pomodoroExtendedBreakSetting'
+            'breakTimeInput', 'pomodoroBreakSetting', 'extendedBreakTimeInput', 'pomodoroExtendedBreakSetting',
+            'soundSelector', 'volumeSlider', 'volumeValue', 'volumeTestBtn', 'darkModeToggle', 'themeIcon',
+            'analyticsBtn', 'analyticsModal', 'analyticsModalOverlay', 'analyticsModalClose', 'exportBtn', 'resetStatsBtn'
         ];
         
         requiredElements.forEach(element => {

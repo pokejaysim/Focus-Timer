@@ -52,6 +52,13 @@
             <section class="total-focus-display" id="total-focus-display" aria-label="Total Focus Time">
                 Total Focus Time: <span id="total-hours">0</span> hours
             </section>
+            
+            <!-- Analytics Button -->
+            <section class="analytics-section">
+                <button class="analytics-btn" id="analytics-btn" aria-label="View Statistics">
+                    📊 View Stats
+                </button>
+            </section>
 
             <!-- Pomodoro Status Display -->
             <section class="pomodoro-status" id="pomodoro-status" aria-label="Pomodoro Status" style="display: none;">
@@ -90,6 +97,16 @@
                         </label>
                     </div>
                 </div>
+                <div class="settings-row">
+                    <label for="dark-mode-toggle">Dark Mode:</label>
+                    <div class="dark-mode-toggle-container">
+                        <label class="toggle-switch" for="dark-mode-toggle">
+                            <input type="checkbox" id="dark-mode-toggle" class="toggle-input">
+                            <span class="toggle-slider dark-mode-slider"></span>
+                        </label>
+                        <span class="theme-icon" id="theme-icon">🌙</span>
+                    </div>
+                </div>
                 <div class="settings-row pomodoro-break-setting" id="pomodoro-break-setting" style="display: none;">
                     <label for="break-time-input">Break time:</label>
                     <div class="break-input-group">
@@ -103,6 +120,25 @@
                         <input type="number" id="extended-break-time-input" min="1" max="120" value="15">
                         <span class="break-unit">minutes</span>
                         <span class="extended-break-hint">(after 4 cycles)</span>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <label for="sound-selector">Sound theme:</label>
+                    <select id="sound-selector" class="sound-selector">
+                        <option value="chime" selected>Classic Chime</option>
+                        <option value="nature">Nature Sounds</option>
+                        <option value="bell">Temple Bell</option>
+                        <option value="soft">Soft Tone</option>
+                        <option value="off">Silent</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <label for="volume-slider">Volume:</label>
+                    <div class="volume-control">
+                        <span class="volume-icon">🔊</span>
+                        <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="50">
+                        <span class="volume-value" id="volume-value">50%</span>
+                        <button class="volume-test-btn" id="volume-test-btn" aria-label="Test sound">🎵</button>
                     </div>
                 </div>
             </section>
@@ -142,6 +178,54 @@
                 <div class="celebration-text">Your plant grew! 🎉</div>
             </div>
         </main>
+
+        <!-- Analytics Modal -->
+        <div class="analytics-modal-overlay" id="analytics-modal-overlay">
+            <div class="analytics-modal" id="analytics-modal">
+                <div class="analytics-modal-header">
+                    <h3 class="analytics-modal-title">📊 Focus Statistics</h3>
+                    <button class="analytics-modal-close" id="analytics-modal-close" aria-label="Close">×</button>
+                </div>
+                <div class="analytics-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-sessions">0</div>
+                            <div class="stat-label">Total Sessions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="current-streak">0</div>
+                            <div class="stat-label">Current Streak</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="longest-streak">0</div>
+                            <div class="stat-label">Longest Streak</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="avg-session">0</div>
+                            <div class="stat-label">Avg Session (min)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="weekly-stats">
+                        <h4>This Week</h4>
+                        <div class="week-grid" id="week-grid">
+                            <div class="day-stat" data-day="0"><span class="day-name">Sun</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                            <div class="day-stat" data-day="1"><span class="day-name">Mon</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                            <div class="day-stat" data-day="2"><span class="day-name">Tue</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                            <div class="day-stat" data-day="3"><span class="day-name">Wed</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                            <div class="day-stat" data-day="4"><span class="day-name">Thu</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                            <div class="day-stat" data-day="5"><span class="day-name">Fri</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                            <div class="day-stat" data-day="6"><span class="day-name">Sat</span><div class="day-bar"><div class="day-fill"></div></div><span class="day-time">0h</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-actions">
+                        <button class="export-btn" id="export-btn">📤 Export Data</button>
+                        <button class="reset-stats-btn" id="reset-stats-btn">🗑️ Reset Stats</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Plant Selection Modal -->
         <div class="plant-modal-overlay" id="plant-modal-overlay">
