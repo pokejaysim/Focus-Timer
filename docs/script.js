@@ -1027,14 +1027,25 @@ class FocusTimer {
     updateBreakTimeFromInput() {
         const inputValue = parseInt(this.breakTimeInput.value);
         
-        if (inputValue >= 1 && inputValue <= 60) {
+        // Allow any positive integer between 1 and 60
+        if (!isNaN(inputValue) && inputValue >= 1 && inputValue <= 60) {
             this.breakTimeMinutes = inputValue;
             this.breakDuration = this.breakTimeMinutes * 60 * 1000;
             localStorage.setItem('breakTimeMinutes', this.breakTimeMinutes.toString());
-        } else {
-            // Reset to valid value if input is invalid
+        } else if (this.breakTimeInput.value === '' || this.breakTimeInput.value === '0') {
+            // Handle empty input or zero - set to minimum valid value
+            this.breakTimeMinutes = 1;
+            this.breakDuration = this.breakTimeMinutes * 60 * 1000;
             this.breakTimeInput.value = this.breakTimeMinutes;
+            localStorage.setItem('breakTimeMinutes', this.breakTimeMinutes.toString());
+        } else if (!isNaN(inputValue) && inputValue > 60) {
+            // If value is too high, set to maximum
+            this.breakTimeMinutes = 60;
+            this.breakDuration = this.breakTimeMinutes * 60 * 1000;
+            this.breakTimeInput.value = this.breakTimeMinutes;
+            localStorage.setItem('breakTimeMinutes', this.breakTimeMinutes.toString());
         }
+        // Don't reset for other invalid inputs to allow user to continue typing
     }
     
     updateBreakTimeInput() {
@@ -1046,14 +1057,25 @@ class FocusTimer {
     updateExtendedBreakTimeFromInput() {
         const inputValue = parseInt(this.extendedBreakTimeInput.value);
         
-        if (inputValue >= 1 && inputValue <= 120) {
+        // Allow any positive integer between 1 and 120
+        if (!isNaN(inputValue) && inputValue >= 1 && inputValue <= 120) {
             this.extendedBreakTimeMinutes = inputValue;
             this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
             localStorage.setItem('extendedBreakTimeMinutes', this.extendedBreakTimeMinutes.toString());
-        } else {
-            // Reset to valid value if input is invalid
+        } else if (this.extendedBreakTimeInput.value === '' || this.extendedBreakTimeInput.value === '0') {
+            // Handle empty input or zero - set to minimum valid value
+            this.extendedBreakTimeMinutes = 1;
+            this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
             this.extendedBreakTimeInput.value = this.extendedBreakTimeMinutes;
+            localStorage.setItem('extendedBreakTimeMinutes', this.extendedBreakTimeMinutes.toString());
+        } else if (!isNaN(inputValue) && inputValue > 120) {
+            // If value is too high, set to maximum
+            this.extendedBreakTimeMinutes = 120;
+            this.extendedBreakDuration = this.extendedBreakTimeMinutes * 60 * 1000;
+            this.extendedBreakTimeInput.value = this.extendedBreakTimeMinutes;
+            localStorage.setItem('extendedBreakTimeMinutes', this.extendedBreakTimeMinutes.toString());
         }
+        // Don't reset for other invalid inputs to allow user to continue typing
     }
     
     updateExtendedBreakTimeInput() {
