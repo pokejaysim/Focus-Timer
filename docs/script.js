@@ -91,6 +91,71 @@ class FocusTimer {
         // Dark mode setting
         this.darkMode = localStorage.getItem('darkMode') === 'true' || false;
         
+        // Focus mode setting
+        this.focusMode = localStorage.getItem('focusMode') === 'true' || false;
+        
+        // Tag system
+        this.sessionTags = JSON.parse(localStorage.getItem('sessionTags') || '[]');
+        this.currentTag = localStorage.getItem('currentTag') || '';
+        this.selectedTagColor = '#A0522D';
+        
+        // Motivational messages system
+        this.motivationalMessages = {
+            sessionComplete: [
+                "🎉 Fantastic work! You're building great focus habits.",
+                "✨ Another session done! Your dedication is paying off.",
+                "🚀 Excellent focus! You're crushing your goals today.",
+                "🌟 Well done! Every session brings you closer to mastery.",
+                "💪 Great job staying focused! Your consistency is inspiring.",
+                "🎯 Session complete! You're developing incredible discipline.",
+                "🌱 Amazing focus! Watch yourself grow with each session.",
+                "🏆 Outstanding work! Your focus skills are getting stronger."
+            ],
+            breakComplete: [
+                "☕ Break's over! Ready to tackle the next challenge?",
+                "🌊 Refreshed and ready? Let's dive back into focused work!",
+                "⚡ Recharged! Time to channel that energy into productivity.",
+                "🌅 Break complete! Fresh mind, fresh focus ahead.",
+                "🔋 Batteries recharged! Let's make this next session count.",
+                "🎪 Break time over! Back to the focused action!",
+                "💫 Mind refreshed! Ready to create something amazing?"
+            ],
+            goalAchieved: [
+                "🎯 Daily goal smashed! You're unstoppable today!",
+                "👑 Goal achieved! You're building a legendary focus streak.",
+                "🏆 Mission accomplished! Your dedication is truly impressive.",
+                "💎 Daily target hit! You're forging habits of excellence.",
+                "🌟 Goal crushed! Your consistency is your superpower.",
+                "🚀 Target achieved! You're on fire with your focus!",
+                "⭐ Daily goal complete! You're becoming a focus master!"
+            ],
+            plantGrowth: [
+                "🌱 Your plant grew! Just like your focus skills!",
+                "🌿 Growth unlocked! Your dedication is bearing fruit.",
+                "🌳 Plant level up! You're cultivating greatness.",
+                "🌺 Beautiful progress! Your focus garden is blooming.",
+                "🌸 New growth achieved! Your persistence is inspiring.",
+                "🍃 Plant evolved! Your focus journey continues to flourish.",
+                "🌾 Growth milestone! You're nurturing excellence."
+            ],
+            encouragement: [
+                "💪 You've got this! Every moment of focus counts.",
+                "🌟 Stay strong! Great things are built one session at a time.",
+                "🎯 Keep going! Your future self will thank you.",
+                "⚡ Power through! You're stronger than any distraction.",
+                "🌊 Ride the wave of focus! You're in your element.",
+                "🔥 On fire! Your concentration is your secret weapon.",
+                "✨ Believe in yourself! Focus is your pathway to success."
+            ]
+        };
+        
+        // Daily goal system
+        this.dailyGoal = parseFloat(localStorage.getItem('dailyGoal') || '2');
+        this.goalStreak = parseInt(localStorage.getItem('goalStreak') || '0');
+        this.bestGoalStreak = parseInt(localStorage.getItem('bestGoalStreak') || '0');
+        this.goalsAchieved = parseInt(localStorage.getItem('goalsAchieved') || '0');
+        this.lastGoalDate = localStorage.getItem('lastGoalDate') || null;
+        
         // Analytics data
         this.initializeAnalytics();
         
@@ -186,6 +251,36 @@ class FocusTimer {
         this.exportBtn = document.getElementById('export-btn');
         this.resetStatsBtn = document.getElementById('reset-stats-btn');
         
+        // Keyboard hints element
+        this.keyboardHints = document.getElementById('keyboard-hints');
+        
+        // Tag system elements
+        this.tagSelector = document.getElementById('session-tag-select');
+        this.tagAddBtn = document.getElementById('tag-add-btn');
+        this.tagModal = document.getElementById('tag-modal');
+        this.tagModalOverlay = document.getElementById('tag-modal-overlay');
+        this.tagModalClose = document.getElementById('tag-modal-close');
+        this.newTagName = document.getElementById('new-tag-name');
+        this.colorOptions = document.getElementById('color-options');
+        this.tagCreateBtn = document.getElementById('tag-create-btn');
+        this.tagCancelBtn = document.getElementById('tag-cancel-btn');
+        
+        // Daily goal system elements
+        this.dailyGoalDisplay = document.getElementById('daily-goal-display');
+        this.goalEditBtn = document.getElementById('goal-edit-btn');
+        this.goalModal = document.getElementById('goal-modal');
+        this.goalModalOverlay = document.getElementById('goal-modal-overlay');
+        this.goalModalClose = document.getElementById('goal-modal-close');
+        this.dailyGoalInput = document.getElementById('daily-goal-input');
+        this.goalPresetBtns = document.querySelectorAll('.goal-preset-btn');
+        this.goalSaveBtn = document.getElementById('goal-save-btn');
+        this.goalCancelBtn = document.getElementById('goal-cancel-btn');
+        this.goalProgressFill = document.getElementById('goal-progress-fill');
+        this.todayHours = document.getElementById('today-hours');
+        this.goalHoursDisplay = document.getElementById('goal-hours-display');
+        this.dailyGoalHours = document.getElementById('daily-goal-hours');
+        this.streakCount = document.getElementById('streak-count');
+        
         // Initialize timer with input value
         this.timeValue = parseInt(this.timeInput.value) || this.CONSTANTS.FOCUS_TIME_DEFAULT;
         this.timeUnit = this.unitSelector.value;
@@ -206,6 +301,18 @@ class FocusTimer {
         this.updateSoundSelector();
         this.updateVolumeSlider();
         this.updateDarkMode();
+        this.applyFocusMode();
+        this.initializeTagSystem();
+        this.initializeDailyGoals();
+        this.updateDailyGoalDisplay();
+        
+        // Show keyboard hints on first visit
+        if (!localStorage.getItem('keyboardHintsShown')) {
+            setTimeout(() => {
+                this.showKeyboardHints();
+                localStorage.setItem('keyboardHintsShown', 'true');
+            }, 2000);
+        }
         
         // Handle page visibility changes to update timer when returning to tab
         document.addEventListener('visibilitychange', () => {
@@ -216,6 +323,63 @@ class FocusTimer {
         
         // Add keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Ignore shortcuts when user is typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // Space bar - Start/Pause timer
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!this.isRunning && !this.isPaused) {
+                    this.start();
+                } else if (this.isRunning) {
+                    this.pause();
+                } else if (this.isPaused) {
+                    this.start();
+                }
+                return;
+            }
+            
+            // R key - Reset timer
+            if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                this.reset();
+                return;
+            }
+            
+            // S key - Skip session
+            if (e.key === 's' || e.key === 'S') {
+                e.preventDefault();
+                this.skip();
+                return;
+            }
+            
+            // Number keys 1-7 - Preset times
+            const numberKey = parseInt(e.key);
+            if (numberKey >= 1 && numberKey <= 7) {
+                e.preventDefault();
+                const presetBtns = Array.from(this.presetButtons);
+                if (presetBtns[numberKey - 1]) {
+                    this.setPresetTime(presetBtns[numberKey - 1]);
+                }
+                return;
+            }
+            
+            // F key - Toggle full screen focus mode
+            if (e.key === 'f' || e.key === 'F') {
+                e.preventDefault();
+                this.toggleFocusMode();
+                return;
+            }
+            
+            // ? key - Show/hide keyboard shortcuts
+            if (e.key === '?') {
+                e.preventDefault();
+                this.toggleKeyboardHints();
+                return;
+            }
+            
             // Reset plant progress (Ctrl/Cmd + Shift + R)
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
                 e.preventDefault();
@@ -292,6 +456,32 @@ class FocusTimer {
         });
         this.exportBtn.addEventListener('click', () => this.exportData());
         this.resetStatsBtn.addEventListener('click', () => this.resetStats());
+        
+        // Tag system listeners
+        this.tagAddBtn.addEventListener('click', () => this.openTagModal());
+        this.tagModalClose.addEventListener('click', () => this.closeTagModal());
+        this.tagModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.tagModalOverlay) {
+                this.closeTagModal();
+            }
+        });
+        this.tagCreateBtn.addEventListener('click', () => this.createTag());
+        this.tagCancelBtn.addEventListener('click', () => this.closeTagModal());
+        this.tagSelector.addEventListener('change', () => this.selectTag());
+        
+        // Daily goal system listeners
+        this.goalEditBtn.addEventListener('click', () => this.openGoalModal());
+        this.goalModalClose.addEventListener('click', () => this.closeGoalModal());
+        this.goalModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.goalModalOverlay) {
+                this.closeGoalModal();
+            }
+        });
+        this.goalSaveBtn.addEventListener('click', () => this.saveGoal());
+        this.goalCancelBtn.addEventListener('click', () => this.closeGoalModal());
+        this.goalPresetBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.setGoalPreset(btn));
+        });
 
         // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
@@ -300,6 +490,10 @@ class FocusTimer {
                     this.closePlantModal();
                 } else if (this.analyticsModalOverlay.classList.contains('show')) {
                     this.closeAnalyticsModal();
+                } else if (this.tagModalOverlay.classList.contains('show')) {
+                    this.closeTagModal();
+                } else if (this.goalModalOverlay.classList.contains('show')) {
+                    this.closeGoalModal();
                 }
             }
         });
@@ -381,6 +575,17 @@ class FocusTimer {
                 document.body.className = this.isBreakTime ? 'timer-break' : 'timer-running';
             } else {
                 document.body.className = 'timer-running';
+            }
+            
+            // Add progress animation when starting
+            this.addProgressAnimation();
+            
+            // Show contextual encouraging message (occasionally)
+            if (Math.random() < 0.3) { // 30% chance to show message
+                setTimeout(() => {
+                    const encouragingMessage = this.getContextualMessage();
+                    this.showBrowserNotification('Focus Time! 🎯', encouragingMessage);
+                }, 5000); // Show after 5 seconds of focus
             }
             
             // Update display every 100ms for smooth countdown
@@ -499,6 +704,10 @@ class FocusTimer {
         // Track analytics
         this.trackSession(sessionHours);
         
+        // Check daily goal achievement
+        this.checkGoalAchievement(sessionHours);
+        this.updateDailyGoalDisplay();
+        
         // Advance plant stage if not at maximum
         if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
             this.advancePlantStage();
@@ -518,7 +727,11 @@ class FocusTimer {
         document.body.className = 'timer-completed';
         
         this.playNotification();
-        this.showBrowserNotification();
+        
+        // Show motivational browser notification
+        const motivationalMessage = this.getRandomMessage('sessionComplete');
+        this.showBrowserNotification('Focus Session Complete! 🎉', motivationalMessage);
+        
         this.flashTabTitle();
         this.timerDisplay.textContent = "Session Complete!";
         
@@ -553,6 +766,10 @@ class FocusTimer {
         
         // Track analytics
         this.trackSession(sessionHours);
+        
+        // Check daily goal achievement
+        this.checkGoalAchievement(sessionHours);
+        this.updateDailyGoalDisplay();
         
         // Advance plant stage if not at maximum
         if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
@@ -599,7 +816,11 @@ class FocusTimer {
         localStorage.setItem('cycleCount', this.cycleCount.toString());
         
         this.playChimeSound();
-        this.showBrowserNotification('Break Complete! Back to work! 🌱', 'Ready for another focus session.');
+        
+        // Show motivational break completion message
+        const breakMessage = this.getRandomMessage('breakComplete');
+        this.showBrowserNotification('Break Complete! 🌱', breakMessage);
+        
         this.flashTabTitle();
         this.timerDisplay.textContent = "Back to Work!";
         
@@ -686,28 +907,18 @@ class FocusTimer {
     }
     
     showCelebration() {
-        const messages = [
-            'Your plant grew! 🎉',
-            'Great progress! 🌱',
-            'Keep it growing! ✨',
-            'Amazing focus! 🚀',
-            'Plant power! 💪',
-            'Growth achieved! 🌿'
-        ];
-        
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        const randomMessage = this.getRandomMessage('plantGrowth');
         const celebrationText = this.celebrationMessage.querySelector('.celebration-text');
         celebrationText.textContent = randomMessage;
         
         // Show celebration message with animation
         this.celebrationMessage.classList.add('show');
         
-        // Add growth animation to plant
-        this.plantEmoji.style.animation = 'growthPulse 0.8s ease-in-out';
+        // Add enhanced celebration effects
+        this.addCelebrationEffects();
         
         setTimeout(() => {
             this.celebrationMessage.classList.remove('show');
-            this.plantEmoji.style.animation = '';
         }, this.CONSTANTS.CELEBRATION_DURATION);
     }
     
@@ -727,7 +938,25 @@ class FocusTimer {
         
         const displayMinutes = minutes.toString().padStart(2, '0');
         const displaySeconds = seconds.toString().padStart(2, '0');
-        this.timerDisplay.textContent = `${displayMinutes}:${displaySeconds}`;
+        const timeString = `${displayMinutes}:${displaySeconds}`;
+        
+        this.timerDisplay.textContent = timeString;
+        
+        // Update browser tab title with timer
+        this.updateTabTitle(timeString);
+    }
+    
+    updateTabTitle(timeString) {
+        if (this.isRunning || this.isPaused) {
+            const status = this.isPaused ? '⏸️' : 
+                          this.isBreakTime ? (this.isExtendedBreak ? '🏖️' : '☕') : '🌱';
+            const modeText = this.isBreakTime ? 
+                           (this.isExtendedBreak ? 'Extended Break' : 'Break') : 
+                           'Focus';
+            document.title = `${status} ${timeString} - ${modeText} | Timer Tree`;
+        } else {
+            document.title = this.originalTitle;
+        }
     }
     
     updateProgressBar() {
@@ -816,9 +1045,12 @@ class FocusTimer {
             this.originalWorkDuration = this.duration;
         }
         
-        // Update active state
+        // Update active state with animation
         this.presetButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
+        
+        // Add selection animation
+        this.addSelectionAnimation(button);
     }
     
     updateTotalFocusDisplay() {
@@ -1121,6 +1353,444 @@ class FocusTimer {
         console.log('Pomodoro data reset successfully');
     }
     
+    toggleFocusMode() {
+        this.focusMode = !this.focusMode;
+        localStorage.setItem('focusMode', this.focusMode.toString());
+        this.applyFocusMode();
+    }
+    
+    applyFocusMode() {
+        if (this.focusMode) {
+            document.body.classList.add('focus-mode');
+            // Hide settings and other UI elements in focus mode
+            document.querySelector('.timer-settings')?.classList.add('hidden-in-focus');
+            document.querySelector('.preset-buttons')?.classList.add('hidden-in-focus');
+            document.querySelector('.analytics-section')?.classList.add('hidden-in-focus');
+            document.querySelector('.total-focus-display')?.classList.add('hidden-in-focus');
+            document.querySelector('.info-button')?.classList.add('hidden-in-focus');
+        } else {
+            document.body.classList.remove('focus-mode');
+            // Show settings and other UI elements when exiting focus mode
+            document.querySelector('.timer-settings')?.classList.remove('hidden-in-focus');
+            document.querySelector('.preset-buttons')?.classList.remove('hidden-in-focus');
+            document.querySelector('.analytics-section')?.classList.remove('hidden-in-focus');
+            document.querySelector('.total-focus-display')?.classList.remove('hidden-in-focus');
+            document.querySelector('.info-button')?.classList.remove('hidden-in-focus');
+        }
+    }
+    
+    toggleKeyboardHints() {
+        if (this.keyboardHints) {
+            this.keyboardHints.classList.toggle('show');
+        }
+    }
+    
+    showKeyboardHints() {
+        if (this.keyboardHints) {
+            this.keyboardHints.classList.add('show');
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                this.hideKeyboardHints();
+            }, 5000);
+        }
+    }
+    
+    hideKeyboardHints() {
+        if (this.keyboardHints) {
+            this.keyboardHints.classList.remove('show');
+        }
+    }
+    
+    // Tag System Methods
+    initializeTagSystem() {
+        // Add default tags if none exist
+        if (this.sessionTags.length === 0) {
+            this.sessionTags = [
+                { name: 'Work', color: '#A0522D', id: 'work' },
+                { name: 'Study', color: '#8FBC8F', id: 'study' },
+                { name: 'Creative', color: '#DDA0DD', id: 'creative' }
+            ];
+            this.saveSessionTags();
+        }
+        
+        this.updateTagSelector();
+        this.setupColorOptionHandlers();
+    }
+    
+    updateTagSelector() {
+        if (!this.tagSelector) return;
+        
+        // Clear existing options except "No tag"
+        this.tagSelector.innerHTML = '<option value="">No tag</option>';
+        
+        // Add tag options
+        this.sessionTags.forEach(tag => {
+            const option = document.createElement('option');
+            option.value = tag.id;
+            option.textContent = tag.name;
+            option.style.color = tag.color;
+            this.tagSelector.appendChild(option);
+        });
+        
+        // Set current selection
+        this.tagSelector.value = this.currentTag;
+    }
+    
+    setupColorOptionHandlers() {
+        if (!this.colorOptions) return;
+        
+        const colorOptionElements = this.colorOptions.querySelectorAll('.color-option');
+        colorOptionElements.forEach(option => {
+            option.addEventListener('click', () => {
+                colorOptionElements.forEach(el => el.classList.remove('selected'));
+                option.classList.add('selected');
+                this.selectedTagColor = option.dataset.color;
+            });
+        });
+        
+        // Select first color by default
+        if (colorOptionElements.length > 0) {
+            colorOptionElements[0].classList.add('selected');
+            this.selectedTagColor = colorOptionElements[0].dataset.color;
+        }
+    }
+    
+    openTagModal() {
+        if (this.tagModalOverlay) {
+            this.tagModalOverlay.classList.add('show');
+            document.body.classList.add('modal-open');
+            if (this.newTagName) {
+                this.newTagName.focus();
+            }
+        }
+    }
+    
+    closeTagModal() {
+        if (this.tagModalOverlay) {
+            this.tagModalOverlay.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            // Clear form
+            if (this.newTagName) this.newTagName.value = '';
+            // Reset color selection
+            this.setupColorOptionHandlers();
+        }
+    }
+    
+    createTag() {
+        const tagName = this.newTagName?.value.trim();
+        if (!tagName) {
+            alert('Please enter a tag name.');
+            return;
+        }
+        
+        // Check for duplicate names
+        if (this.sessionTags.some(tag => tag.name.toLowerCase() === tagName.toLowerCase())) {
+            alert('A tag with this name already exists.');
+            return;
+        }
+        
+        // Create new tag
+        const newTag = {
+            name: tagName,
+            color: this.selectedTagColor,
+            id: tagName.toLowerCase().replace(/[^a-z0-9]/g, '-')
+        };
+        
+        this.sessionTags.push(newTag);
+        this.saveSessionTags();
+        this.updateTagSelector();
+        this.closeTagModal();
+        
+        // Auto-select the new tag
+        this.currentTag = newTag.id;
+        this.tagSelector.value = newTag.id;
+        localStorage.setItem('currentTag', this.currentTag);
+    }
+    
+    selectTag() {
+        if (!this.tagSelector) return;
+        
+        this.currentTag = this.tagSelector.value;
+        localStorage.setItem('currentTag', this.currentTag);
+    }
+    
+    saveSessionTags() {
+        localStorage.setItem('sessionTags', JSON.stringify(this.sessionTags));
+    }
+    
+    getCurrentTagInfo() {
+        if (!this.currentTag) return null;
+        return this.sessionTags.find(tag => tag.id === this.currentTag);
+    }
+    
+    // Daily Goal System Methods
+    initializeDailyGoals() {
+        // Reset streak if it's a new day and yesterday's goal wasn't met
+        this.checkGoalStreak();
+    }
+    
+    checkGoalStreak() {
+        const today = new Date().toDateString();
+        
+        if (this.lastGoalDate && this.lastGoalDate !== today) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayString = yesterday.toDateString();
+            
+            if (this.lastGoalDate === yesterdayString) {
+                // Check if yesterday's goal was met
+                const yesterdayHours = this.getHoursForDate(yesterdayString);
+                if (yesterdayHours < this.dailyGoal) {
+                    // Goal not met, reset streak
+                    this.goalStreak = 0;
+                    localStorage.setItem('goalStreak', '0');
+                }
+            } else {
+                // Gap in usage, reset streak
+                this.goalStreak = 0;
+                localStorage.setItem('goalStreak', '0');
+            }
+        }
+    }
+    
+    getHoursForDate(dateString) {
+        if (!this.analytics.sessions) return 0;
+        
+        return this.analytics.sessions
+            .filter(session => {
+                const sessionDate = new Date(session.date).toDateString();
+                return sessionDate === dateString;
+            })
+            .reduce((total, session) => total + session.duration, 0);
+    }
+    
+    getTodayHours() {
+        const today = new Date().toDateString();
+        return this.getHoursForDate(today);
+    }
+    
+    updateDailyGoalDisplay() {
+        if (!this.dailyGoalDisplay) return;
+        
+        const todayHours = this.getTodayHours();
+        const progressPercentage = Math.min(100, (todayHours / this.dailyGoal) * 100);
+        const isGoalAchieved = todayHours >= this.dailyGoal;
+        
+        // Update display elements
+        if (this.todayHours) this.todayHours.textContent = todayHours.toFixed(1);
+        if (this.goalHoursDisplay) this.goalHoursDisplay.textContent = this.dailyGoal.toString();
+        if (this.dailyGoalHours) this.dailyGoalHours.textContent = this.dailyGoal.toString();
+        if (this.streakCount) this.streakCount.textContent = this.goalStreak.toString();
+        
+        // Update progress bar
+        if (this.goalProgressFill) {
+            this.goalProgressFill.style.width = `${progressPercentage}%`;
+        }
+        
+        // Update achieved state
+        if (isGoalAchieved) {
+            this.dailyGoalDisplay.classList.add('achieved');
+        } else {
+            this.dailyGoalDisplay.classList.remove('achieved');
+        }
+    }
+    
+    checkGoalAchievement(sessionHours) {
+        const todayHours = this.getTodayHours();
+        const today = new Date().toDateString();
+        
+        // Check if this session pushes us over the goal
+        if (todayHours >= this.dailyGoal && this.lastGoalDate !== today) {
+            this.goalStreak++;
+            this.goalsAchieved++;
+            this.lastGoalDate = today;
+            
+            // Update best streak
+            if (this.goalStreak > this.bestGoalStreak) {
+                this.bestGoalStreak = this.goalStreak;
+                localStorage.setItem('bestGoalStreak', this.bestGoalStreak.toString());
+            }
+            
+            // Save progress
+            localStorage.setItem('goalStreak', this.goalStreak.toString());
+            localStorage.setItem('goalsAchieved', this.goalsAchieved.toString());
+            localStorage.setItem('lastGoalDate', this.lastGoalDate);
+            
+            // Show celebration
+            this.showGoalAchievement();
+        }
+    }
+    
+    showGoalAchievement() {
+        // Add achievement animation
+        this.dailyGoalDisplay.classList.add('achieved');
+        
+        // Show motivational browser notification
+        const goalMessage = this.getRandomMessage('goalAchieved');
+        this.showBrowserNotification(
+            '🎯 Daily Goal Achieved!',
+            `${goalMessage} Streak: ${this.goalStreak} days!`
+        );
+        
+        // Play celebration sound
+        this.playNotification();
+    }
+    
+    openGoalModal() {
+        if (this.goalModalOverlay) {
+            this.goalModalOverlay.classList.add('show');
+            document.body.classList.add('modal-open');
+            
+            // Update modal with current values
+            if (this.dailyGoalInput) {
+                this.dailyGoalInput.value = this.dailyGoal.toString();
+            }
+            
+            // Update stats
+            document.getElementById('current-goal-streak').textContent = `${this.goalStreak} days`;
+            document.getElementById('best-goal-streak').textContent = `${this.bestGoalStreak} days`;
+            document.getElementById('goals-achieved-count').textContent = this.goalsAchieved.toString();
+            
+            // Update preset button states
+            this.updateGoalPresetButtons();
+        }
+    }
+    
+    closeGoalModal() {
+        if (this.goalModalOverlay) {
+            this.goalModalOverlay.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+    }
+    
+    setGoalPreset(button) {
+        const hours = parseFloat(button.dataset.hours);
+        if (this.dailyGoalInput) {
+            this.dailyGoalInput.value = hours.toString();
+        }
+        this.updateGoalPresetButtons(hours);
+    }
+    
+    updateGoalPresetButtons(selectedHours = null) {
+        const currentGoal = selectedHours || this.dailyGoal;
+        this.goalPresetBtns.forEach(btn => {
+            const btnHours = parseFloat(btn.dataset.hours);
+            if (btnHours === currentGoal) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+    
+    saveGoal() {
+        const newGoal = parseFloat(this.dailyGoalInput?.value || '2');
+        
+        if (newGoal < 0.5 || newGoal > 12) {
+            alert('Please enter a goal between 0.5 and 12 hours.');
+            return;
+        }
+        
+        this.dailyGoal = newGoal;
+        localStorage.setItem('dailyGoal', this.dailyGoal.toString());
+        
+        this.updateDailyGoalDisplay();
+        this.closeGoalModal();
+    }
+    
+    // Enhanced Visual Feedback Methods
+    addSelectionAnimation(element) {
+        if (!element) return;
+        
+        // Add ripple effect
+        element.classList.add('success-ripple');
+        setTimeout(() => {
+            element.classList.remove('success-ripple');
+        }, 600);
+    }
+    
+    addProgressAnimation() {
+        if (this.progressBar) {
+            this.progressBar.classList.add('active');
+            setTimeout(() => {
+                this.progressBar.classList.remove('active');
+            }, 1000);
+        }
+        
+        if (this.goalProgressFill && this.goalProgressFill.parentElement) {
+            this.goalProgressFill.parentElement.classList.add('active');
+            setTimeout(() => {
+                this.goalProgressFill.parentElement.classList.remove('active');
+            }, 1000);
+        }
+    }
+    
+    addCelebrationEffects() {
+        // Add celebration animation to plant
+        if (this.plantEmoji) {
+            this.plantEmoji.style.animation = 'growthPulse 0.8s ease-in-out';
+            setTimeout(() => {
+                this.plantEmoji.style.animation = '';
+            }, 800);
+        }
+        
+        // Add success ripple to start button
+        if (this.startBtn) {
+            this.addSelectionAnimation(this.startBtn);
+        }
+        
+        // Add particle effect to celebration message
+        if (this.celebrationMessage) {
+            this.celebrationMessage.style.animation = 'celebrationShake 0.8s ease-in-out';
+            setTimeout(() => {
+                this.celebrationMessage.style.animation = '';
+            }, 800);
+        }
+    }
+    
+    addLoadingState(element, duration = 2000) {
+        if (!element) return;
+        
+        element.classList.add('loading');
+        setTimeout(() => {
+            element.classList.remove('loading');
+        }, duration);
+    }
+    
+    // Motivational Messages Methods
+    getRandomMessage(category) {
+        const messages = this.motivationalMessages[category] || this.motivationalMessages.encouragement;
+        return messages[Math.floor(Math.random() * messages.length)];
+    }
+    
+    getContextualMessage() {
+        const now = new Date();
+        const hour = now.getHours();
+        const todayHours = this.getTodayHours();
+        const isGoalClose = todayHours >= (this.dailyGoal * 0.8);
+        
+        // Time-based messages
+        if (hour < 12) {
+            if (Math.random() < 0.3) return "🌅 Good morning! Ready to seize the day with focused work?";
+        } else if (hour < 17) {
+            if (Math.random() < 0.3) return "☀️ Afternoon focus session! You're making great progress.";
+        } else if (hour < 21) {
+            if (Math.random() < 0.3) return "🌆 Evening productivity! Wrapping up the day strong.";
+        }
+        
+        // Goal-based messages
+        if (isGoalClose && Math.random() < 0.4) {
+            return "🎯 You're so close to your daily goal! Keep pushing!";
+        }
+        
+        // Streak-based messages
+        if (this.goalStreak >= 3 && Math.random() < 0.3) {
+            return `🔥 ${this.goalStreak} days strong! Your streak is impressive!`;
+        }
+        
+        return this.getRandomMessage('encouragement');
+    }
+    
     updateSoundTheme() {
         this.soundTheme = this.soundSelector.value;
         localStorage.setItem('soundTheme', this.soundTheme);
@@ -1261,12 +1931,16 @@ class FocusTimer {
         const now = new Date();
         const today = now.toDateString();
         const sessionMinutes = Math.round(sessionHours * 60);
+        const tagInfo = this.getCurrentTagInfo();
         
         // Add session to history
         this.analytics.sessions.push({
             date: now.toISOString(),
             duration: sessionHours,
-            timestamp: now.getTime()
+            timestamp: now.getTime(),
+            tag: this.currentTag,
+            tagName: tagInfo?.name || null,
+            tagColor: tagInfo?.color || null
         });
         
         // Update total sessions
