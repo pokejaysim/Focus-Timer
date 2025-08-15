@@ -251,6 +251,17 @@ class FocusTimer {
         this.exportBtn = document.getElementById('export-btn');
         this.resetStatsBtn = document.getElementById('reset-stats-btn');
         
+        // Garden elements
+        this.gardenBtn = document.getElementById('garden-btn');
+        this.gardenModal = document.getElementById('garden-modal');
+        this.gardenModalOverlay = document.getElementById('garden-modal-overlay');
+        this.gardenModalClose = document.getElementById('garden-modal-close');
+        this.gardenGrid = document.getElementById('garden-grid');
+        this.gardenFilter = document.getElementById('garden-filter');
+        this.gardenSort = document.getElementById('garden-sort');
+        this.exportGardenBtn = document.getElementById('export-garden-btn');
+        this.clearGardenBtn = document.getElementById('clear-garden-btn');
+        
         // Keyboard hints element
         this.keyboardHints = document.getElementById('keyboard-hints');
         
@@ -456,6 +467,19 @@ class FocusTimer {
         });
         this.exportBtn.addEventListener('click', () => this.exportData());
         this.resetStatsBtn.addEventListener('click', () => this.resetStats());
+        
+        // Garden listeners
+        this.gardenBtn.addEventListener('click', () => this.openGardenModal());
+        this.gardenModalClose.addEventListener('click', () => this.closeGardenModal());
+        this.gardenModalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.gardenModalOverlay) {
+                this.closeGardenModal();
+            }
+        });
+        this.gardenFilter.addEventListener('change', () => this.renderGardenGrid());
+        this.gardenSort.addEventListener('change', () => this.renderGardenGrid());
+        this.exportGardenBtn.addEventListener('click', () => this.exportGardenData());
+        this.clearGardenBtn.addEventListener('click', () => this.clearGarden());
         
         // Tag system listeners
         this.tagAddBtn.addEventListener('click', () => this.openTagModal());
@@ -880,6 +904,14 @@ class FocusTimer {
     advancePlantStage() {
         this.plantStage++;
         localStorage.setItem('plantStage', this.plantStage.toString());
+        
+        // Check if plant is fully grown (stage 7 = index 6)
+        if (this.plantStage > this.CONSTANTS.PLANT_STAGES) {
+            this.addCompletedPlantToGarden();
+            this.plantStage = 0; // Reset to start growing a new plant
+            localStorage.setItem('plantStage', this.plantStage.toString());
+        }
+        
         this.updatePlantStage();
     }
     
@@ -1925,6 +1957,13 @@ class FocusTimer {
         if (!this.analytics.weeklyData) this.analytics.weeklyData = {};
         
         this.saveAnalytics();
+        
+        // Initialize garden data
+        this.garden = JSON.parse(localStorage.getItem('garden') || '{}');
+        if (!this.garden.completedPlants) this.garden.completedPlants = [];
+        if (!this.garden.plantStats) this.garden.plantStats = {};
+        
+        this.saveGardenData();
     }
     
     trackSession(sessionHours) {
@@ -1994,6 +2033,171 @@ class FocusTimer {
     
     saveAnalytics() {
         localStorage.setItem('analytics', JSON.stringify(this.analytics));
+    }
+    
+    // Garden Methods
+    saveGardenData() {
+        localStorage.setItem('garden', JSON.stringify(this.garden));
+    }
+    
+    addCompletedPlantToGarden() {
+        const now = new Date();
+        const tagInfo = this.getCurrentTagInfo();
+        
+        const completedPlant = {
+            id: Date.now().toString(),
+            plantType: this.selectedPlant,
+            completedDate: now.toISOString(),
+            displayDate: now.toLocaleDateString(),
+            focusTimeHours: this.totalFocusHours,
+            sessionTag: tagInfo ? tagInfo.name : null,
+            sessionTagColor: tagInfo ? tagInfo.color : null
+        };
+        
+        this.garden.completedPlants.push(completedPlant);
+        
+        // Update plant stats
+        if (!this.garden.plantStats[this.selectedPlant]) {
+            this.garden.plantStats[this.selectedPlant] = 0;
+        }
+        this.garden.plantStats[this.selectedPlant]++;
+        
+        this.saveGardenData();
+    }
+    
+    getGardenStats() {
+        const totalPlants = this.garden.completedPlants.length;
+        const plantTypes = Object.keys(this.garden.plantStats).length;
+        
+        // Find favorite plant type
+        let favoriteType = '-';
+        let maxCount = 0;
+        Object.entries(this.garden.plantStats).forEach(([plantType, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                favoriteType = this.PLANT_TYPES[plantType]?.name || plantType;
+            }
+        });
+        
+        return {
+            totalPlants,
+            plantTypes,
+            favoriteType
+        };
+    }
+    
+    filterAndSortGarden(filterType = 'all', sortType = 'recent') {
+        let filteredPlants = [...this.garden.completedPlants];
+        
+        // Filter
+        if (filterType !== 'all') {
+            filteredPlants = filteredPlants.filter(plant => plant.plantType === filterType);
+        }
+        
+        // Sort
+        switch (sortType) {
+            case 'oldest':
+                filteredPlants.sort((a, b) => new Date(a.completedDate) - new Date(b.completedDate));
+                break;
+            case 'type':
+                filteredPlants.sort((a, b) => a.plantType.localeCompare(b.plantType));
+                break;
+            case 'focus-time':
+                filteredPlants.sort((a, b) => b.focusTimeHours - a.focusTimeHours);
+                break;
+            case 'recent':
+            default:
+                filteredPlants.sort((a, b) => new Date(b.completedDate) - new Date(a.completedDate));
+                break;
+        }
+        
+        return filteredPlants;
+    }
+    
+    renderGardenGrid(plants = null) {
+        if (!plants) {
+            plants = this.filterAndSortGarden(
+                this.gardenFilter.value,
+                this.gardenSort.value
+            );
+        }
+        
+        const emptyGarden = document.getElementById('empty-garden');
+        
+        if (plants.length === 0) {
+            emptyGarden.style.display = 'block';
+            return;
+        }
+        
+        emptyGarden.style.display = 'none';
+        
+        this.gardenGrid.innerHTML = plants.map(plant => {
+            const plantInfo = this.PLANT_TYPES[plant.plantType];
+            const finalStage = plantInfo.stages[plantInfo.stages.length - 1];
+            
+            return `
+                <div class="garden-plant-card" data-plant-id="${plant.id}">
+                    <div class="garden-plant-emoji">${finalStage}</div>
+                    <div class="garden-plant-info">
+                        <div class="garden-plant-name">${plantInfo.name}</div>
+                        <div class="garden-plant-date">${plant.displayDate}</div>
+                        ${plant.sessionTag ? `<div class="garden-plant-tag" style="color: ${plant.sessionTagColor}">${plant.sessionTag}</div>` : ''}
+                        <div class="garden-plant-focus-time">${plant.focusTimeHours.toFixed(1)}h focus</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    updateGardenStats() {
+        const stats = this.getGardenStats();
+        
+        document.getElementById('total-plants-grown').textContent = stats.totalPlants;
+        document.getElementById('garden-diversity').textContent = stats.plantTypes;
+        document.getElementById('favorite-plant-type').textContent = stats.favoriteType;
+    }
+    
+    openGardenModal() {
+        this.updateGardenStats();
+        this.renderGardenGrid();
+        this.gardenModalOverlay.classList.add('show');
+        document.body.classList.add('modal-open');
+    }
+    
+    closeGardenModal() {
+        this.gardenModalOverlay.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    }
+    
+    exportGardenData() {
+        const gardenData = {
+            exportDate: new Date().toISOString(),
+            totalPlants: this.garden.completedPlants.length,
+            plantStats: this.garden.plantStats,
+            completedPlants: this.garden.completedPlants
+        };
+        
+        const dataStr = JSON.stringify(gardenData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `timer-tree-garden-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+    
+    clearGarden() {
+        if (confirm('Are you sure you want to clear your entire garden? This action cannot be undone.')) {
+            this.garden.completedPlants = [];
+            this.garden.plantStats = {};
+            this.saveGardenData();
+            this.updateGardenStats();
+            this.renderGardenGrid();
+        }
     }
     
     openAnalyticsModal() {
@@ -2091,7 +2295,8 @@ class FocusTimer {
             'pomodoroToggle', 'pomodoroStatus', 'modeText', 'cycleCountElement',
             'breakTimeInput', 'pomodoroBreakSetting', 'extendedBreakTimeInput', 'pomodoroExtendedBreakSetting',
             'soundSelector', 'volumeSlider', 'volumeValue', 'volumeTestBtn', 'darkModeToggle', 'themeIcon',
-            'analyticsBtn', 'analyticsModal', 'analyticsModalOverlay', 'analyticsModalClose', 'exportBtn', 'resetStatsBtn'
+            'analyticsBtn', 'analyticsModal', 'analyticsModalOverlay', 'analyticsModalClose', 'exportBtn', 'resetStatsBtn',
+            'gardenBtn', 'gardenModal', 'gardenModalOverlay', 'gardenModalClose', 'gardenGrid', 'gardenFilter', 'gardenSort'
         ];
         
         requiredElements.forEach(element => {

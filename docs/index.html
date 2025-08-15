@@ -72,10 +72,13 @@
                 </div>
             </section>
             
-            <!-- Analytics Button -->
+            <!-- Analytics and Garden Buttons -->
             <section class="analytics-section">
                 <button class="analytics-btn" id="analytics-btn" aria-label="View Statistics">
                     📊 View Stats
+                </button>
+                <button class="garden-btn" id="garden-btn" aria-label="View Garden">
+                    🌻 My Garden
                 </button>
             </section>
 
@@ -250,6 +253,64 @@
                     <div class="analytics-actions">
                         <button class="export-btn" id="export-btn">📤 Export Data</button>
                         <button class="reset-stats-btn" id="reset-stats-btn">🗑️ Reset Stats</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Garden Modal -->
+        <div class="garden-modal-overlay" id="garden-modal-overlay">
+            <div class="garden-modal" id="garden-modal">
+                <div class="garden-modal-header">
+                    <h3 class="garden-modal-title">🌻 My Garden</h3>
+                    <button class="garden-modal-close" id="garden-modal-close" aria-label="Close">×</button>
+                </div>
+                <div class="garden-content">
+                    <div class="garden-stats">
+                        <div class="garden-stat-card">
+                            <div class="garden-stat-number" id="total-plants-grown">0</div>
+                            <div class="garden-stat-label">Plants Grown</div>
+                        </div>
+                        <div class="garden-stat-card">
+                            <div class="garden-stat-number" id="garden-diversity">0</div>
+                            <div class="garden-stat-label">Plant Types</div>
+                        </div>
+                        <div class="garden-stat-card">
+                            <div class="garden-stat-number" id="favorite-plant-type">-</div>
+                            <div class="garden-stat-label">Favorite Type</div>
+                        </div>
+                    </div>
+                    
+                    <div class="garden-filter-controls">
+                        <label for="garden-filter">Filter by:</label>
+                        <select id="garden-filter" class="garden-filter-select">
+                            <option value="all">All Plants</option>
+                            <option value="classic">Classic Trees</option>
+                            <option value="flower">Flower Gardens</option>
+                            <option value="cactus">Desert Cacti</option>
+                            <option value="bamboo">Bamboo Forests</option>
+                            <option value="fruit">Fruit Trees</option>
+                            <option value="rose">Rose Gardens</option>
+                        </select>
+                        <select id="garden-sort" class="garden-sort-select">
+                            <option value="recent">Most Recent</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="type">By Plant Type</option>
+                            <option value="focus-time">By Focus Time</option>
+                        </select>
+                    </div>
+                    
+                    <div class="garden-grid" id="garden-grid">
+                        <div class="empty-garden" id="empty-garden">
+                            <div class="empty-garden-icon">🌱</div>
+                            <div class="empty-garden-text">Your garden is empty</div>
+                            <div class="empty-garden-subtext">Complete focus sessions to grow plants!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="garden-actions">
+                        <button class="export-garden-btn" id="export-garden-btn">📤 Export Garden</button>
+                        <button class="clear-garden-btn" id="clear-garden-btn">🗑️ Clear Garden</button>
                     </div>
                 </div>
             </div>
