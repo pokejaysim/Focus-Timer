@@ -733,7 +733,7 @@ class FocusTimer {
         this.updateDailyGoalDisplay();
         
         // Advance plant stage if not at maximum
-        if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
+        if (this.plantStage <= this.CONSTANTS.PLANT_STAGES) {
             this.advancePlantStage();
             this.showCelebration();
         }
@@ -796,7 +796,7 @@ class FocusTimer {
         this.updateDailyGoalDisplay();
         
         // Advance plant stage if not at maximum
-        if (this.plantStage < this.CONSTANTS.PLANT_STAGES) {
+        if (this.plantStage <= this.CONSTANTS.PLANT_STAGES) {
             this.advancePlantStage();
             this.showCelebration();
         }
