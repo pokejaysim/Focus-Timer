@@ -917,14 +917,29 @@ class FocusTimer {
     
     updatePlantStage() {
         this.plantEmoji.setAttribute('data-stage', this.plantStage.toString());
-        this.stageIndicator.textContent = `Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES + 1}`;
+        
+        // Animate stage indicator update
+        const stageIndicator = this.stageIndicator;
+        stageIndicator.classList.add('number-update');
+        stageIndicator.textContent = `Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES + 1}`;
+        setTimeout(() => {
+            stageIndicator.classList.remove('number-update');
+        }, 300);
         
         // Update plant emoji based on selected plant type and current stage
         const currentPlant = this.PLANT_TYPES[this.selectedPlant];
         const currentStage = Math.min(this.plantStage, currentPlant.stages.length - 1);
         
-        // Directly set the emoji content
-        this.plantEmoji.textContent = currentPlant.stages[currentStage];
+        // Smoothly transition plant emoji
+        this.plantEmoji.style.opacity = '0';
+        this.plantEmoji.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => {
+            this.plantEmoji.textContent = currentPlant.stages[currentStage];
+            this.plantEmoji.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            this.plantEmoji.style.opacity = '1';
+            this.plantEmoji.style.transform = 'scale(1)';
+        }, 150);
         
         const appTitle = document.querySelector('.app-title');
         const plantName = currentPlant.name;
@@ -933,6 +948,7 @@ class FocusTimer {
             appTitle.textContent = `Start growing your ${plantName} today!`;
         } else if (this.plantStage === this.CONSTANTS.PLANT_STAGES) {
             appTitle.textContent = `Your ${plantName.toLowerCase()} is fully grown! 🌸`;
+            this.triggerHapticFeedback('success');
         } else {
             appTitle.textContent = `Keep growing your ${plantName.toLowerCase()}! Stage ${this.plantStage}/${this.CONSTANTS.PLANT_STAGES + 1}`;
         }
@@ -1758,12 +1774,34 @@ class FocusTimer {
     }
     
     addCelebrationEffects() {
-        // Add celebration animation to plant
+        // Haptic feedback for mobile devices
+        this.triggerHapticFeedback();
+        
+        // Add enhanced plant growth animation
         if (this.plantEmoji) {
-            this.plantEmoji.style.animation = 'growthPulse 0.8s ease-in-out';
+            this.plantEmoji.classList.add('growing');
             setTimeout(() => {
-                this.plantEmoji.style.animation = '';
-            }, 800);
+                this.plantEmoji.classList.remove('growing');
+                this.plantEmoji.classList.add('stage-up');
+                setTimeout(() => {
+                    this.plantEmoji.classList.remove('stage-up');
+                }, 800);
+            }, 600);
+        }
+        
+        // Add celebration bounce to plant container
+        const plantContainer = document.querySelector('.plant-stage-container');
+        if (plantContainer) {
+            plantContainer.classList.add('celebrating');
+            setTimeout(() => {
+                plantContainer.classList.remove('celebrating');
+            }, 600);
+        }
+        
+        // Launch confetti for full tree completion (stage 6 = fully grown)
+        if (this.plantStage === this.CONSTANTS.PLANT_STAGES) {
+            this.launchConfetti();
+            this.showCelebrationOverlay();
         }
         
         // Add success ripple to start button
@@ -1778,6 +1816,106 @@ class FocusTimer {
                 this.celebrationMessage.style.animation = '';
             }, 800);
         }
+        
+        // Animate streak fire if applicable
+        const streakElement = document.querySelector('.goal-streak');
+        if (streakElement && this.goalStreak > 0) {
+            streakElement.classList.add('fire-animation');
+            setTimeout(() => {
+                streakElement.classList.remove('fire-animation');
+            }, 500);
+        }
+    }
+    
+    // Trigger haptic feedback on supported devices
+    triggerHapticFeedback(intensity = 'medium') {
+        // Vibration API for mobile browsers
+        if ('vibrate' in navigator) {
+            const patterns = {
+                light: [10],
+                medium: [30],
+                strong: [50],
+                success: [30, 50, 30]
+            };
+            navigator.vibrate(patterns[intensity] || patterns.medium);
+        }
+        
+        // Visual haptic feedback
+        document.body.classList.add('haptic-feedback');
+        setTimeout(() => {
+            document.body.classList.remove('haptic-feedback');
+        }, 100);
+    }
+    
+    // Launch confetti particles
+    launchConfetti() {
+        const confettiContainer = document.getElementById('confetti-container') || this.createConfettiContainer();
+        const colors = ['#FFD700', '#FF69B4', '#00CED1', '#FF6347', '#90EE90', '#DDA0DD', '#FFA500'];
+        const particleCount = 100;
+        
+        for (let i = 0; i < particleCount; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Random position across top of screen
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = '-10px';
+                
+                // Random color
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Random size
+                const size = Math.random() * 10 + 5;
+                confetti.style.width = size + 'px';
+                confetti.style.height = size + 'px';
+                
+                // Random shape (circle or square)
+                if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '50%';
+                }
+                
+                // Random animation duration and delay
+                const duration = Math.random() * 2 + 2;
+                const delay = Math.random() * 0.5;
+                confetti.style.animationDuration = duration + 's';
+                confetti.style.animationDelay = delay + 's';
+                
+                confettiContainer.appendChild(confetti);
+                confetti.classList.add('active');
+                
+                // Remove confetti after animation
+                setTimeout(() => {
+                    confetti.remove();
+                }, (duration + delay) * 1000);
+            }, i * 10);
+        }
+    }
+    
+    // Create confetti container if it doesn't exist
+    createConfettiContainer() {
+        let container = document.getElementById('confetti-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'confetti-container';
+            document.body.appendChild(container);
+        }
+        return container;
+    }
+    
+    // Show celebration overlay
+    showCelebrationOverlay() {
+        let overlay = document.getElementById('celebration-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'celebration-overlay';
+            document.body.appendChild(overlay);
+        }
+        
+        overlay.classList.add('active');
+        setTimeout(() => {
+            overlay.classList.remove('active');
+        }, 2000);
     }
     
     addLoadingState(element, duration = 2000) {

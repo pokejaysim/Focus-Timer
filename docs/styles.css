@@ -98,6 +98,10 @@
     /* Breakpoints for responsive design */
     --breakpoint-sm: 480px;
     --breakpoint-md: 768px;
+    
+    /* Animation timings */
+    --animation-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --animation-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     --breakpoint-lg: 1024px;
 }
 
@@ -3108,4 +3112,277 @@ body.modal-open {
     .garden-plant-emoji {
         font-size: var(--font-size-2xl);
     }
+}
+
+/* ========================================
+   ENHANCED UX ANIMATIONS & POLISH
+   ======================================== */
+
+/* Plant Growth Pulse Animation */
+@keyframes plantGrowPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Plant Growth Glow Effect */
+@keyframes plantGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 0px rgba(144, 238, 144, 0));
+    }
+    50% {
+        filter: drop-shadow(0 0 20px rgba(144, 238, 144, 0.8));
+    }
+}
+
+/* Bounce In Animation */
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Stage Level-Up Animation */
+.plant-emoji.growing {
+    animation: plantGrowPulse 0.6s var(--animation-spring), 
+               plantGlow 1.2s ease-in-out;
+}
+
+.plant-emoji.stage-up {
+    animation: bounceIn 0.8s var(--animation-bounce);
+}
+
+/* Confetti Container */
+#confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+/* Confetti Particle */
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #f0f;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Confetti Fall Animation */
+@keyframes confettiFall {
+    0% {
+        opacity: 1;
+        transform: translateY(0) rotateZ(0deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(100vh) rotateZ(720deg);
+    }
+}
+
+.confetti.active {
+    animation: confettiFall 3s ease-in forwards;
+}
+
+/* Celebration Overlay */
+#celebration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(144, 238, 144, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+#celebration-overlay.active {
+    opacity: 1;
+}
+
+/* Enhanced Timer Display Transitions */
+.timer-display {
+    transition: transform 0.3s var(--animation-spring), 
+                color 0.3s ease,
+                text-shadow 0.3s ease;
+}
+
+.timer-display.pulsing {
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Button Press Animation */
+button:active {
+    transform: scale(0.95);
+}
+
+button {
+    transition: all 0.2s var(--animation-spring);
+}
+
+/* Progress Bar Smooth Fill */
+.progress-fill, .goal-progress-fill {
+    transition: width 0.3s ease-out;
+}
+
+/* Modal Slide-In Animation */
+@keyframes slideInFromBottom {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.plant-selector-modal.active .plant-selector-content,
+.analytics-modal.active .analytics-content,
+.garden-modal.active .garden-content,
+.tag-modal.active .tag-modal-content {
+    animation: slideInFromBottom 0.4s var(--animation-spring);
+}
+
+/* Haptic Feedback Class (JS will add/remove) */
+.haptic-feedback {
+    animation: hapticBounce 0.1s ease;
+}
+
+@keyframes hapticBounce {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.98);
+    }
+}
+
+/* Plant Stage Complete Celebration */
+.plant-stage-container.celebrating {
+    animation: celebrationBounce 0.6s var(--animation-bounce);
+}
+
+@keyframes celebrationBounce {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+    30% {
+        transform: translateY(-20px) scale(1.1);
+    }
+    50% {
+        transform: translateY(-10px) scale(1.05);
+    }
+    70% {
+        transform: translateY(-15px) scale(1.08);
+    }
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Smooth Number Counter Animation */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.number-update {
+    animation: countUp 0.3s ease;
+}
+
+/* Enhanced Focus Mode Transitions */
+body.focus-mode {
+    transition: all 0.5s ease;
+}
+
+/* Streak Fire Animation */
+.goal-streak.fire-animation {
+    animation: fireFlicker 0.5s ease-in-out;
+}
+
+@keyframes fireFlicker {
+    0%, 100% {
+        transform: scale(1);
+        filter: hue-rotate(0deg);
+    }
+    25% {
+        transform: scale(1.1) rotate(-5deg);
+        filter: hue-rotate(10deg);
+    }
+    75% {
+        transform: scale(1.1) rotate(5deg);
+        filter: hue-rotate(-10deg);
+    }
+}
+
+/* Success Toast Slide-In */
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast-notification.show {
+    animation: toastSlideIn 0.3s var(--animation-spring);
+}
+
+.toast-notification.hide {
+    animation: toastSlideOut 0.3s ease-in forwards;
 }
