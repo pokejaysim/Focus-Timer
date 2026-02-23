@@ -94,6 +94,9 @@ class FocusTimer {
         // Focus mode setting
         this.focusMode = localStorage.getItem('focusMode') === 'true' || false;
         
+        // Break modal setting
+        this.breakModalEnabled = localStorage.getItem('breakModalEnabled') === 'true' || true;
+        
         // Tag system
         this.sessionTags = JSON.parse(localStorage.getItem('sessionTags') || '[]');
         this.currentTag = localStorage.getItem('currentTag') || '';
@@ -242,6 +245,15 @@ class FocusTimer {
         // Dark mode elements
         this.darkModeToggle = document.getElementById('dark-mode-toggle');
         this.themeIcon = document.getElementById('theme-icon');
+        
+        // Break modal elements
+        this.breakModalOverlay = document.getElementById('break-modal-overlay');
+        this.breakModal = document.getElementById('break-modal');
+        this.breakTime = document.getElementById('break-time');
+        this.breakSkipBtn = document.getElementById('break-skip-btn');
+        this.breakSnoozeBtn = document.getElementById('break-snooze-btn');
+        this.breakModalToggle = document.getElementById('break-modal-toggle');
+        this.breakCountdownInterval = null;
         
         // Analytics elements
         this.analyticsBtn = document.getElementById('analytics-btn');
@@ -456,6 +468,14 @@ class FocusTimer {
         
         // Dark mode listener
         this.darkModeToggle.addEventListener('change', () => this.toggleDarkMode());
+        
+        // Break modal listeners
+        this.breakSkipBtn.addEventListener('click', () => this.skipBreak());
+        this.breakSnoozeBtn.addEventListener('click', () => this.snoozeBreak());
+        this.breakModalToggle.addEventListener('change', () => this.toggleBreakModal());
+        
+        // Set the break modal toggle to match the stored setting
+        this.breakModalToggle.checked = this.breakModalEnabled;
         
         // Analytics listeners
         this.analyticsBtn.addEventListener('click', () => this.openAnalyticsModal());
@@ -822,6 +842,9 @@ class FocusTimer {
         document.body.className = this.isExtendedBreak ? 'timer-extended-break' : 'timer-break';
         this.updatePomodoroStatus();
         
+        // Show break modal if enabled
+        this.showBreakModal();
+        
         // Reset time tracking and automatically start break
         this.startTime = null;
         this.pausedTime = null;
@@ -833,6 +856,7 @@ class FocusTimer {
     }
     
     transitionToWork() {
+        this.hideBreakModal();
         this.isBreakTime = false;
         this.isExtendedBreak = false;
         this.duration = this.originalWorkDuration;
@@ -859,6 +883,64 @@ class FocusTimer {
         setTimeout(() => {
             this.startWorkTimer();
         }, this.CONSTANTS.COMPLETION_DELAY);
+    }
+    
+    showBreakModal() {
+        if (!this.breakModalEnabled) return;
+        
+        this.breakModalOverlay.classList.add('show');
+        this.startBreakCountdown();
+    }
+    
+    hideBreakModal() {
+        this.breakModalOverlay.classList.remove('show');
+        this.stopBreakCountdown();
+    }
+    
+    startBreakCountdown() {
+        if (this.breakCountdownInterval) clearInterval(this.breakCountdownInterval);
+        
+        const breakDurationMs = this.isExtendedBreak ? this.extendedBreakDuration : this.breakDuration;
+        const startTime = Date.now();
+        
+        const updateCountdown = () => {
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, breakDurationMs - elapsed);
+            
+            const totalSeconds = Math.floor(remaining / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            this.breakTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        };
+        
+        updateCountdown(); // Initial update
+        this.breakCountdownInterval = setInterval(updateCountdown, 100);
+    }
+    
+    stopBreakCountdown() {
+        if (this.breakCountdownInterval) {
+            clearInterval(this.breakCountdownInterval);
+            this.breakCountdownInterval = null;
+        }
+    }
+    
+    skipBreak() {
+        this.hideBreakModal();
+        this.transitionToWork();
+    }
+    
+    snoozeBreak() {
+        // Add 5 minutes to the break
+        const snoozeTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+        this.duration += snoozeTime;
+        this.breakDuration += snoozeTime;
+        this.startBreakCountdown(); // Restart countdown with new duration
+    }
+    
+    toggleBreakModal() {
+        this.breakModalEnabled = !this.breakModalEnabled;
+        localStorage.setItem('breakModalEnabled', this.breakModalEnabled.toString());
     }
     
     startBreakTimer() {

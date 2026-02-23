@@ -3386,3 +3386,144 @@ body.focus-mode {
 .toast-notification.hide {
     animation: toastSlideOut 0.3s ease-in forwards;
 }
+
+/* Break Modal Styles */
+.break-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.break-modal-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.break-modal {
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: modalSlideIn 0.3s var(--animation-spring);
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.break-modal-header {
+    margin-bottom: var(--spacing-md);
+}
+
+.break-modal-title {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.break-modal-content {
+    margin-bottom: var(--spacing-lg);
+}
+
+.break-modal-message {
+    font-size: var(--font-size-md);
+    color: var(--color-text-light);
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+.break-countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-gradient-break);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) 0;
+}
+
+.break-time {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: 'Monaco', 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+.break-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+    margin-top: var(--spacing-xs);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.break-modal-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+.break-skip-btn,
+.break-snooze-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.break-skip-btn {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+.break-skip-btn:hover {
+    background: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(160, 82, 45, 0.3);
+}
+
+.break-snooze-btn {
+    background: var(--color-secondary);
+    color: var(--color-text);
+}
+
+.break-snooze-btn:hover {
+    background: var(--color-secondary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(143, 188, 143, 0.3);
+}
+
+/* Dark mode adjustments for break modal */
+[data-theme="dark"] .break-modal {
+    background: var(--color-white);
+}
+
+[data-theme="dark"] .break-modal-title,
+[data-theme="dark"] .break-time {
+    color: var(--color-text);
+}

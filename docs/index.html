@@ -138,6 +138,15 @@
                         <span class="theme-icon" id="theme-icon">🌙</span>
                     </div>
                 </div>
+                <div class="settings-row">
+                    <label for="break-modal-toggle">Break Modal:</label>
+                    <div class="break-modal-toggle-container">
+                        <label class="toggle-switch" for="break-modal-toggle">
+                            <input type="checkbox" id="break-modal-toggle" class="toggle-input" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
                 <div class="settings-row pomodoro-break-setting" id="pomodoro-break-setting" style="display: none;">
                     <label for="break-time-input">Break time:</label>
                     <div class="break-input-group">
@@ -427,6 +436,26 @@
                         <div class="plant-name">Rose Garden</div>
                         <div class="plant-description">Elegant beauty</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Break Modal -->
+        <div class="break-modal-overlay" id="break-modal-overlay">
+            <div class="break-modal" id="break-modal">
+                <div class="break-modal-header">
+                    <h2 class="break-modal-title">🧘 Time for a Break!</h2>
+                </div>
+                <div class="break-modal-content">
+                    <p class="break-modal-message">Stand up, stretch, and rest your eyes for a moment.</p>
+                    <div class="break-countdown" id="break-countdown">
+                        <span class="break-time" id="break-time">5:00</span>
+                        <span class="break-label">remaining</span>
+                    </div>
+                </div>
+                <div class="break-modal-actions">
+                    <button class="break-skip-btn" id="break-skip-btn">Skip Break</button>
+                    <button class="break-snooze-btn" id="break-snooze-btn">Snooze 5 min</button>
                 </div>
             </div>
         </div>
