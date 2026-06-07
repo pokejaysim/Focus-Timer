@@ -6,16 +6,15 @@ Live app: [timertree.ca](http://timertree.ca/)
 
 ## Features
 
-- Custom focus intervals with quick presets
-- Pomodoro mode with configurable regular and extended breaks
-- Break modal with skip and snooze controls
-- Plant selection, growth stages, and garden history
-- Daily goals, streaks, weekly stats, and data export
-- Session tags, sound themes, volume controls, dark mode, and keyboard shortcuts
+- Clock-style Pomodoro timer with focus, short rest, and long rest phases
+- Botanical plate that advances through five growth stages as sessions complete
+- Tucked settings drawer for focus/rest durations, long-rest cadence, plant, and sound theme
+- Almanac-style About, Stats, and Garden overlays
+- Persistent timer state through local storage
 
 ## Tech
 
-HTML · CSS · JavaScript
+HTML · CSS · React UMD
 
 ## Development
 
