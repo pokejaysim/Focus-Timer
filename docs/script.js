@@ -58,6 +58,7 @@ class FocusTimer {
         this.isRunning = false;
         this.isPaused = false;
         this.timer = null;
+        this.transitionTimeout = null;
         
         this.plantStage = parseInt(localStorage.getItem('plantStage') || '0');
         this.totalFocusHours = parseFloat(localStorage.getItem('totalFocusHours') || '0');
@@ -95,7 +96,8 @@ class FocusTimer {
         this.focusMode = localStorage.getItem('focusMode') === 'true' || false;
         
         // Break modal setting
-        this.breakModalEnabled = localStorage.getItem('breakModalEnabled') === 'true' || true;
+        const storedBreakModalEnabled = localStorage.getItem('breakModalEnabled');
+        this.breakModalEnabled = storedBreakModalEnabled === null ? true : storedBreakModalEnabled === 'true';
         
         // Tag system
         this.sessionTags = JSON.parse(localStorage.getItem('sessionTags') || '[]');
@@ -615,11 +617,7 @@ class FocusTimer {
             this.timerDisplay.classList.add('running');
             this.timerDisplay.classList.remove('paused', 'completed');
             
-            if (this.pomodoroMode) {
-                document.body.className = this.isBreakTime ? 'timer-break' : 'timer-running';
-            } else {
-                document.body.className = 'timer-running';
-            }
+            this.setTimerBodyState(this.isBreakTime ? 'timer-break' : 'timer-running');
             
             // Add progress animation when starting
             this.addProgressAnimation();
@@ -642,7 +640,7 @@ class FocusTimer {
             this.isPaused = true;
             this.isRunning = false;
             this.pausedTime = Date.now();
-            clearInterval(this.timer);
+            this.clearActiveTimer();
             
             this.startBtn.textContent = 'Continue';
             this.startBtn.disabled = false;
@@ -651,7 +649,7 @@ class FocusTimer {
             // Add visual state
             this.timerDisplay.classList.add('paused');
             this.timerDisplay.classList.remove('running', 'completed');
-            document.body.className = 'timer-paused';
+            this.setTimerBodyState('timer-paused');
         }
     }
     
@@ -666,7 +664,9 @@ class FocusTimer {
     reset() {
         this.isRunning = false;
         this.isPaused = false;
-        clearInterval(this.timer);
+        this.clearActiveTimer();
+        this.clearTransitionTimeout();
+        this.hideBreakModal();
         
         // Reset all time tracking
         this.startTime = null;
@@ -700,7 +700,7 @@ class FocusTimer {
         
         // Reset visual state
         this.timerDisplay.classList.remove('running', 'paused', 'completed');
-        document.body.className = '';
+        this.setTimerBodyState();
         
         this.updateDisplay();
         this.updateProgressBar();
@@ -725,11 +725,50 @@ class FocusTimer {
         const now = this.isPaused ? this.pausedTime : Date.now();
         return now - this.startTime - this.totalPausedDuration;
     }
+
+    clearActiveTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    clearTransitionTimeout() {
+        if (this.transitionTimeout) {
+            clearTimeout(this.transitionTimeout);
+            this.transitionTimeout = null;
+        }
+    }
+
+    scheduleTransition(callback, delay) {
+        this.clearTransitionTimeout();
+        this.transitionTimeout = setTimeout(() => {
+            this.transitionTimeout = null;
+            callback();
+        }, delay);
+    }
+
+    setTimerBodyState(stateClass = '') {
+        const timerStateClasses = [
+            'timer-running',
+            'timer-paused',
+            'timer-completed',
+            'timer-break',
+            'timer-work',
+            'timer-extended-break'
+        ];
+
+        document.body.classList.remove(...timerStateClasses);
+
+        if (stateClass) {
+            document.body.classList.add(stateClass);
+        }
+    }
     
     complete() {
         this.isRunning = false;
         this.isPaused = false;
-        clearInterval(this.timer);
+        this.clearActiveTimer();
         
         if (this.pomodoroMode) {
             this.handlePomodoroComplete();
@@ -768,7 +807,7 @@ class FocusTimer {
         // Add completion visual state
         this.timerDisplay.classList.add('completed');
         this.timerDisplay.classList.remove('running', 'paused');
-        document.body.className = 'timer-completed';
+        this.setTimerBodyState('timer-completed');
         
         this.playNotification();
         
@@ -787,7 +826,7 @@ class FocusTimer {
         setTimeout(() => {
             this.reset();
             document.title = this.originalTitle;
-            document.body.className = '';
+            this.setTimerBodyState();
         }, this.CONSTANTS.COMPLETION_DELAY);
     }
     
@@ -838,25 +877,29 @@ class FocusTimer {
         this.showBrowserNotification(breakMessage, breakDescription);
         this.flashTabTitle();
         this.timerDisplay.textContent = this.isExtendedBreak ? "Extended Break Time!" : "Break Time!";
+        this.startBtn.textContent = this.isExtendedBreak ? 'Starting extended break...' : 'Starting break...';
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = true;
         
-        document.body.className = this.isExtendedBreak ? 'timer-extended-break' : 'timer-break';
+        this.setTimerBodyState(this.isExtendedBreak ? 'timer-extended-break' : 'timer-break');
         this.updatePomodoroStatus();
-        
-        // Show break modal if enabled
-        this.showBreakModal();
         
         // Reset time tracking and automatically start break
         this.startTime = null;
         this.pausedTime = null;
         this.totalPausedDuration = 0;
         
-        setTimeout(() => {
+        this.scheduleTransition(() => {
             this.startBreakTimer();
         }, this.CONSTANTS.COMPLETION_DELAY);
     }
     
     transitionToWork() {
+        this.clearActiveTimer();
+        this.clearTransitionTimeout();
         this.hideBreakModal();
+        this.isRunning = false;
+        this.isPaused = false;
         this.isBreakTime = false;
         this.isExtendedBreak = false;
         this.duration = this.originalWorkDuration;
@@ -871,8 +914,11 @@ class FocusTimer {
         
         this.flashTabTitle();
         this.timerDisplay.textContent = "Back to Work!";
+        this.startBtn.textContent = 'Starting...';
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = true;
         
-        document.body.className = 'timer-work';
+        this.setTimerBodyState('timer-work');
         this.updatePomodoroStatus();
         
         // Reset time tracking and automatically start work
@@ -880,7 +926,7 @@ class FocusTimer {
         this.pausedTime = null;
         this.totalPausedDuration = 0;
         
-        setTimeout(() => {
+        this.scheduleTransition(() => {
             this.startWorkTimer();
         }, this.CONSTANTS.COMPLETION_DELAY);
     }
@@ -899,13 +945,10 @@ class FocusTimer {
     
     startBreakCountdown() {
         if (this.breakCountdownInterval) clearInterval(this.breakCountdownInterval);
-        
-        const breakDurationMs = this.isExtendedBreak ? this.extendedBreakDuration : this.breakDuration;
-        const startTime = Date.now();
-        
+
         const updateCountdown = () => {
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, breakDurationMs - elapsed);
+            const elapsed = this.isRunning || this.isPaused ? this.getElapsedTime() : 0;
+            const remaining = Math.max(0, this.duration - elapsed);
             
             const totalSeconds = Math.floor(remaining / 1000);
             const minutes = Math.floor(totalSeconds / 60);
@@ -926,24 +969,32 @@ class FocusTimer {
     }
     
     skipBreak() {
+        this.clearActiveTimer();
         this.hideBreakModal();
         this.transitionToWork();
     }
     
     snoozeBreak() {
-        // Add 5 minutes to the break
         const snoozeTime = 5 * 60 * 1000; // 5 minutes in milliseconds
         this.duration += snoozeTime;
-        this.breakDuration += snoozeTime;
-        this.startBreakCountdown(); // Restart countdown with new duration
+        this.updateDisplay();
+        this.updateProgressBar();
+        this.startBreakCountdown();
     }
     
     toggleBreakModal() {
-        this.breakModalEnabled = !this.breakModalEnabled;
+        this.breakModalEnabled = this.breakModalToggle.checked;
         localStorage.setItem('breakModalEnabled', this.breakModalEnabled.toString());
+
+        if (!this.breakModalEnabled) {
+            this.hideBreakModal();
+        } else if (this.isBreakTime && this.isRunning) {
+            this.showBreakModal();
+        }
     }
     
     startBreakTimer() {
+        this.clearActiveTimer();
         this.isRunning = true;
         this.isPaused = false;
         this.startTime = Date.now();
@@ -958,12 +1009,14 @@ class FocusTimer {
         
         this.timerDisplay.classList.add('running');
         this.timerDisplay.classList.remove('paused', 'completed');
-        document.body.className = 'timer-break';
+        this.setTimerBodyState(this.isExtendedBreak ? 'timer-extended-break' : 'timer-break');
+        this.showBreakModal();
         
         this.timer = setInterval(() => this.tick(), this.CONSTANTS.UPDATE_INTERVAL);
     }
     
     startWorkTimer() {
+        this.clearActiveTimer();
         this.isRunning = true;
         this.isPaused = false;
         this.startTime = Date.now();
@@ -978,7 +1031,7 @@ class FocusTimer {
         
         this.timerDisplay.classList.add('running');
         this.timerDisplay.classList.remove('paused', 'completed');
-        document.body.className = 'timer-running';
+        this.setTimerBodyState('timer-running');
         
         this.timer = setInterval(() => this.tick(), this.CONSTANTS.UPDATE_INTERVAL);
     }
@@ -2333,6 +2386,74 @@ class FocusTimer {
         
         return filteredPlants;
     }
+
+    createEmptyGardenElement() {
+        const emptyGarden = document.createElement('div');
+        emptyGarden.className = 'empty-garden';
+        emptyGarden.id = 'empty-garden';
+
+        const icon = document.createElement('div');
+        icon.className = 'empty-garden-icon';
+        icon.textContent = '🌱';
+
+        const text = document.createElement('div');
+        text.className = 'empty-garden-text';
+        text.textContent = 'Your garden is empty';
+
+        const subtext = document.createElement('div');
+        subtext.className = 'empty-garden-subtext';
+        subtext.textContent = 'Complete focus sessions to grow plants!';
+
+        emptyGarden.append(icon, text, subtext);
+        return emptyGarden;
+    }
+
+    getSafeTagColor(color) {
+        return /^#[0-9a-fA-F]{6}$/.test(color || '') ? color : '#A0522D';
+    }
+
+    createGardenPlantCard(plant) {
+        const plantInfo = this.PLANT_TYPES[plant.plantType] || this.PLANT_TYPES.classic;
+        const finalStage = plantInfo.stages[plantInfo.stages.length - 1];
+        const focusTimeHours = Number(plant.focusTimeHours) || 0;
+
+        const card = document.createElement('div');
+        card.className = 'garden-plant-card';
+        card.dataset.plantId = String(plant.id || '');
+
+        const emoji = document.createElement('div');
+        emoji.className = 'garden-plant-emoji';
+        emoji.textContent = finalStage;
+
+        const info = document.createElement('div');
+        info.className = 'garden-plant-info';
+
+        const name = document.createElement('div');
+        name.className = 'garden-plant-name';
+        name.textContent = plantInfo.name;
+
+        const date = document.createElement('div');
+        date.className = 'garden-plant-date';
+        date.textContent = plant.displayDate || (plant.completedDate ? new Date(plant.completedDate).toLocaleDateString() : '-');
+
+        info.append(name, date);
+
+        if (plant.sessionTag) {
+            const tag = document.createElement('div');
+            tag.className = 'garden-plant-tag';
+            tag.style.color = this.getSafeTagColor(plant.sessionTagColor);
+            tag.textContent = plant.sessionTag;
+            info.appendChild(tag);
+        }
+
+        const focusTime = document.createElement('div');
+        focusTime.className = 'garden-plant-focus-time';
+        focusTime.textContent = `${focusTimeHours.toFixed(1)}h focus`;
+        info.appendChild(focusTime);
+
+        card.append(emoji, info);
+        return card;
+    }
     
     renderGardenGrid(plants = null) {
         if (!plants) {
@@ -2341,32 +2462,17 @@ class FocusTimer {
                 this.gardenSort.value
             );
         }
-        
-        const emptyGarden = document.getElementById('empty-garden');
+
+        this.gardenGrid.innerHTML = '';
         
         if (plants.length === 0) {
-            emptyGarden.style.display = 'block';
+            this.gardenGrid.appendChild(this.createEmptyGardenElement());
             return;
         }
-        
-        emptyGarden.style.display = 'none';
-        
-        this.gardenGrid.innerHTML = plants.map(plant => {
-            const plantInfo = this.PLANT_TYPES[plant.plantType];
-            const finalStage = plantInfo.stages[plantInfo.stages.length - 1];
-            
-            return `
-                <div class="garden-plant-card" data-plant-id="${plant.id}">
-                    <div class="garden-plant-emoji">${finalStage}</div>
-                    <div class="garden-plant-info">
-                        <div class="garden-plant-name">${plantInfo.name}</div>
-                        <div class="garden-plant-date">${plant.displayDate}</div>
-                        ${plant.sessionTag ? `<div class="garden-plant-tag" style="color: ${plant.sessionTagColor}">${plant.sessionTag}</div>` : ''}
-                        <div class="garden-plant-focus-time">${plant.focusTimeHours.toFixed(1)}h focus</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+
+        plants.forEach(plant => {
+            this.gardenGrid.appendChild(this.createGardenPlantCard(plant));
+        });
     }
     
     updateGardenStats() {
