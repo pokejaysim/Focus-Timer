@@ -23,7 +23,13 @@
 }
 
 *{box-sizing:border-box;}
-html,body,#root{margin:0;padding:0;min-height:100%;}
+html,body,#root{
+  margin:0;padding:0;
+  min-height:100%;
+  min-height:100vh;
+  min-height:100dvh;
+  background:#dde0c9;
+}
 body{
   background:#dde0c9;
   font-family:var(--font-body);
