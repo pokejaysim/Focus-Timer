@@ -2,7 +2,12 @@
    Static React timer with reducer state, SVG plant plate, and modal sheets. */
 (function () {
   const e = React.createElement;
-  const { useReducer, useEffect, useState, useRef } = React;
+  const { useReducer, useEffect, useState } = React;
+
+  const STORAGE_KEY = "tt-almanac";
+  const STORAGE_VERSION = 2;
+  const SECOND = 1000;
+  const DAY = 24 * 60 * 60 * 1000;
 
   const THEMES = {
     cream: { paper: "#efe7d3", p2: "#e7ddc4", p3: "#ddd1b4", ink: "#33312a" },
@@ -27,6 +32,28 @@
   const STAGE_WORD = ["One", "Two", "Three", "Four", "Five"];
   const STAGE_EVERY = 2; // focus sessions per stage
 
+  function dateKey(date = new Date()) {
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+  }
+
+  function dayDiff(from, to) {
+    if (!from || !to) return Infinity;
+    const a = new Date(from + "T00:00:00");
+    const b = new Date(to + "T00:00:00");
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return Infinity;
+    return Math.round((b - a) / DAY);
+  }
+
+  function clampNumber(value, min, max, fallback) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(n)));
+  }
+
   function toRoman(n) {
     const m = [["X",10],["IX",9],["V",5],["IV",4],["I",1]];
     let r = ""; n = Math.max(0, n|0);
@@ -42,52 +69,179 @@
   const dur = (phase, s) =>
     (phase === "focus" ? s.focusMin : phase === "long" ? s.longMin : s.breakMin) * 60;
 
-  const INIT = {
-    focusMin: 25, breakMin: 5, longMin: 15, longEvery: 4,
-    plantKey: "heartleaf", sound: "Forest Morning",
-    phase: "focus", remaining: 25 * 60,
-    sessionInRound: 0, completedFocus: 4, today: 3, running: false,
-  };
+  function freshState() {
+    const today = dateKey();
+    return {
+      version: STORAGE_VERSION,
+      focusMin: 25, breakMin: 5, longMin: 15, longEvery: 4,
+      plantKey: "heartleaf", sound: "Forest Morning",
+      phase: "focus", remaining: 25 * 60,
+      sessionInRound: 0, completedFocus: 0, today: 0, todayDate: today,
+      totalFocusSeconds: 0, longestFocusSeconds: 0,
+      streak: 0, lastFocusDate: null,
+      running: false, lastTickAt: null,
+    };
+  }
+
+  function sanitizeState(raw) {
+    const base = freshState();
+    if (!raw || typeof raw !== "object" || raw.version !== STORAGE_VERSION) return base;
+
+    const phase = ["focus", "break", "long"].includes(raw.phase) ? raw.phase : base.phase;
+    const state = {
+      ...base,
+      focusMin: clampNumber(raw.focusMin, 5, 90, base.focusMin),
+      breakMin: clampNumber(raw.breakMin, 1, 30, base.breakMin),
+      longMin: clampNumber(raw.longMin, 5, 45, base.longMin),
+      longEvery: clampNumber(raw.longEvery, 2, 8, base.longEvery),
+      plantKey: PLANTS.some((p) => p.key === raw.plantKey) ? raw.plantKey : base.plantKey,
+      sound: SOUNDS.includes(raw.sound) ? raw.sound : base.sound,
+      phase,
+      sessionInRound: clampNumber(raw.sessionInRound, 0, 8, base.sessionInRound),
+      completedFocus: clampNumber(raw.completedFocus, 0, 100000, base.completedFocus),
+      today: clampNumber(raw.today, 0, 100000, base.today),
+      todayDate: typeof raw.todayDate === "string" ? raw.todayDate : base.todayDate,
+      totalFocusSeconds: clampNumber(raw.totalFocusSeconds, 0, 1000000000, base.totalFocusSeconds),
+      longestFocusSeconds: clampNumber(raw.longestFocusSeconds, 0, 24 * 60 * 60, base.longestFocusSeconds),
+      streak: clampNumber(raw.streak, 0, 100000, base.streak),
+      lastFocusDate: typeof raw.lastFocusDate === "string" ? raw.lastFocusDate : null,
+      running: false,
+      lastTickAt: null,
+    };
+    state.remaining = clampNumber(raw.remaining, 0, dur(state.phase, state), dur(state.phase, state));
+    return syncToday(state);
+  }
+
+  function loadInitialState() {
+    try {
+      return sanitizeState(JSON.parse(localStorage.getItem(STORAGE_KEY)));
+    } catch (e) {
+      return freshState();
+    }
+  }
+
+  function syncToday(s, today = dateKey()) {
+    let next = s;
+    if (next.todayDate !== today) {
+      next = { ...next, today: 0, todayDate: today };
+    }
+    if (next.lastFocusDate && dayDiff(next.lastFocusDate, today) > 1 && next.streak !== 0) {
+      next = { ...next, streak: 0 };
+    }
+    return next;
+  }
+
+  function completeFocus(s) {
+    const today = dateKey();
+    const todayCount = s.todayDate === today ? s.today : 0;
+    const sessionInRound = s.sessionInRound + 1;
+    const nextPhase = sessionInRound % s.longEvery === 0 ? "long" : "break";
+    const focusSeconds = dur("focus", s);
+    let streak = s.streak;
+
+    if (s.lastFocusDate !== today) {
+      streak = dayDiff(s.lastFocusDate, today) === 1 ? s.streak + 1 : 1;
+    }
+
+    return {
+      ...s,
+      phase: nextPhase,
+      sessionInRound,
+      completedFocus: s.completedFocus + 1,
+      today: todayCount + 1,
+      todayDate: today,
+      totalFocusSeconds: s.totalFocusSeconds + focusSeconds,
+      longestFocusSeconds: Math.max(s.longestFocusSeconds, focusSeconds),
+      streak,
+      lastFocusDate: today,
+      remaining: dur(nextPhase, s),
+      running: true,
+    };
+  }
+
+  function completeRest(s) {
+    const sessionInRound = s.phase === "long" ? 0 : s.sessionInRound;
+    return {
+      ...s,
+      phase: "focus",
+      sessionInRound,
+      remaining: dur("focus", s),
+      running: false,
+      lastTickAt: null,
+    };
+  }
+
+  function advanceElapsed(s, seconds, tickAt) {
+    let next = s;
+    let remainingSeconds = seconds;
+
+    while (remainingSeconds > 0 && next.running) {
+      if (remainingSeconds < next.remaining) {
+        return {
+          ...next,
+          remaining: next.remaining - remainingSeconds,
+          lastTickAt: tickAt,
+        };
+      }
+
+      remainingSeconds -= next.remaining;
+      next = next.phase === "focus" ? completeFocus(next) : completeRest(next);
+    }
+
+    return {
+      ...next,
+      lastTickAt: next.running ? tickAt : null,
+    };
+  }
 
   function reducer(s, a) {
     switch (a.type) {
-      case "LOAD":
-        return { ...s, ...a.state, running: false };
       case "TOGGLE": {
-        if (s.remaining <= 0) return { ...s, remaining: dur(s.phase, s), running: true };
-        return { ...s, running: !s.running };
+        const now = a.now || Date.now();
+        const ns = syncToday(s);
+        if (ns.remaining <= 0) {
+          return { ...ns, remaining: dur(ns.phase, ns), running: true, lastTickAt: now };
+        }
+        return { ...ns, running: !ns.running, lastTickAt: ns.running ? null : now };
       }
-      case "RESET":
-        return { ...s, remaining: dur(s.phase, s), running: false };
+      case "RESET": {
+        const ns = syncToday(s);
+        return { ...ns, remaining: dur(ns.phase, ns), running: false, lastTickAt: null };
+      }
       case "SKIP": {
-        if (s.phase === "focus")
-          return { ...s, phase: "break", remaining: dur("break", s), running: false };
-        const sr = s.phase === "long" ? 0 : s.sessionInRound;
-        return { ...s, phase: "focus", sessionInRound: sr, remaining: dur("focus", s), running: false };
+        const ns = syncToday(s);
+        if (ns.phase === "focus") {
+          return { ...ns, phase: "break", remaining: dur("break", ns), running: false, lastTickAt: null };
+        }
+        const sessionInRound = ns.phase === "long" ? 0 : ns.sessionInRound;
+        return { ...ns, phase: "focus", sessionInRound, remaining: dur("focus", ns), running: false, lastTickAt: null };
       }
       case "TICK": {
-        if (s.remaining > 1) return { ...s, remaining: s.remaining - 1 };
-        // phase boundary
-        if (s.phase === "focus") {
-          const sr = s.sessionInRound + 1;
-          const isLong = sr % s.longEvery === 0;
-          const next = isLong ? "long" : "break";
-          return {
-            ...s, phase: next, sessionInRound: sr,
-            completedFocus: s.completedFocus + 1, today: s.today + 1,
-            remaining: dur(next, s), running: true, // breaks auto-start
-          };
-        } else {
-          const sr = s.phase === "long" ? 0 : s.sessionInRound;
-          return { ...s, phase: "focus", sessionInRound: sr, remaining: dur("focus", s), running: false };
-        }
+        const ns = syncToday(s);
+        if (!ns.running) return ns;
+        const now = a.now || Date.now();
+        const lastTickAt = Number.isFinite(ns.lastTickAt) ? ns.lastTickAt : now;
+        const elapsed = Math.floor((now - lastTickAt) / SECOND);
+        if (elapsed < 1) return ns.lastTickAt ? ns : { ...ns, lastTickAt: now };
+        return advanceElapsed(ns, elapsed, lastTickAt + elapsed * SECOND);
       }
       case "SET": {
-        const ns = { ...s, [a.key]: a.value };
-        if (!ns.running && ["focusMin", "breakMin", "longMin"].includes(a.key))
+        const updates = {};
+        if (a.key === "focusMin") updates.focusMin = clampNumber(a.value, 5, 90, s.focusMin);
+        if (a.key === "breakMin") updates.breakMin = clampNumber(a.value, 1, 30, s.breakMin);
+        if (a.key === "longMin") updates.longMin = clampNumber(a.value, 5, 45, s.longMin);
+        if (a.key === "longEvery") updates.longEvery = clampNumber(a.value, 2, 8, s.longEvery);
+        if (a.key === "plantKey" && PLANTS.some((p) => p.key === a.value)) updates.plantKey = a.value;
+        if (a.key === "sound" && SOUNDS.includes(a.value)) updates.sound = a.value;
+
+        const ns = syncToday({ ...s, ...updates });
+        if (!ns.running && ["focusMin", "breakMin", "longMin"].includes(a.key)) {
           ns.remaining = dur(ns.phase, ns);
+        }
         return ns;
       }
+      case "SYNC_TODAY":
+        return syncToday(s, a.today || dateKey());
       default:
         return s;
     }
@@ -123,29 +277,38 @@
 
   /* ---- main app ---- */
   function App() {
-    const [s, dispatch] = useReducer(reducer, INIT);
+    const [s, dispatch] = useReducer(reducer, null, loadInitialState);
     const [overlay, setOverlay] = useState(null);
     const [drawer, setDrawer] = useState(false);
-    const loaded = useRef(false);
 
-    // load once
-    useEffect(() => {
-      try {
-        const raw = localStorage.getItem("tt-almanac");
-        if (raw) dispatch({ type: "LOAD", state: JSON.parse(raw) });
-      } catch (e) {}
-      loaded.current = true;
-    }, []);
     // persist
     useEffect(() => {
-      if (loaded.current) localStorage.setItem("tt-almanac", JSON.stringify(s));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...s, version: STORAGE_VERSION }));
+      } catch (e) {}
     }, [s]);
+
+    // keep the "today" counter honest if the app stays open across midnight
+    useEffect(() => {
+      const id = setInterval(() => dispatch({ type: "SYNC_TODAY", today: dateKey() }), 60 * SECOND);
+      return () => clearInterval(id);
+    }, []);
+
     // ticking
     useEffect(() => {
       if (!s.running) return;
-      const id = setInterval(() => dispatch({ type: "TICK" }), 1000);
+      const id = setInterval(() => dispatch({ type: "TICK", now: Date.now() }), SECOND);
       return () => clearInterval(id);
     }, [s.running]);
+
+    useEffect(() => {
+      if (!overlay) return;
+      const onKeyDown = (ev) => {
+        if (ev.key === "Escape") setOverlay(null);
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }, [overlay]);
 
     const total = dur(s.phase, s);
     const progress = 1 - s.remaining / total;
@@ -154,6 +317,17 @@
     const intoStage = s.completedFocus - stageIdx * STAGE_EVERY;
     const toNext = STAGE_EVERY - intoStage;
     const modeLabel = s.phase === "focus" ? "Focus" : s.phase === "long" ? "Long Rest" : "Short Rest";
+    const displayToday = s.todayDate === dateKey() ? s.today : 0;
+    const totalFocusSeconds = Math.max(0, s.totalFocusSeconds);
+    const gardenUnlockedCount = Math.max(1, Math.min(6, stageIdx + 1));
+    const stats = {
+      today: displayToday,
+      totalH: Math.floor(totalFocusSeconds / 3600),
+      totalM: Math.floor((totalFocusSeconds % 3600) / 60),
+      longest: Math.round(Math.max(0, s.longestFocusSeconds) / 60),
+      streak: s.streak,
+      plates: gardenUnlockedCount,
+    };
 
     const rootStyle = {
       "--paper": THEME.paper,
@@ -266,9 +440,9 @@
       /* overlays */
       overlay === "stats" && e(window.StatsSheet, {
         onClose: () => setOverlay(null),
-        stats: { today: s.today, totalH: 12, totalM: 48, longest: 60, streak: 5, plates: 3 },
+        stats,
       }),
-      overlay === "garden" && e(window.GardenSheet, { onClose: () => setOverlay(null) }),
+      overlay === "garden" && e(window.GardenSheet, { onClose: () => setOverlay(null), unlockedCount: gardenUnlockedCount }),
       overlay === "about" && e(window.AboutSheet, { onClose: () => setOverlay(null) })
     );
   }

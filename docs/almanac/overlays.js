@@ -56,8 +56,8 @@
         e(Row, { k: "Sessions tended today", sub: "Focus periods completed", v: stats.today }),
         e(Row, { k: "Total focus tended", sub: "All time", v: stats.totalH, unit: "h " + stats.totalM + "m" }),
         e(Row, { k: "Longest single sitting", sub: "Personal best", v: stats.longest, unit: "min" }),
-        e(Row, { k: "Current streak", sub: "Consecutive days", v: stats.streak, unit: "days" }),
-        e(Row, { k: "Plates pressed", sub: "Plants grown to maturity", v: stats.plates })
+        e(Row, { k: "Current streak", sub: "Consecutive days", v: stats.streak, unit: stats.streak === 1 ? "day" : "days" }),
+        e(Row, { k: "Plates pressed", sub: "Unlocked in collection", v: stats.plates })
       ),
       e("div", { style: { marginTop: "20px", fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: "15px", color: "var(--ink-soft)", textAlign: "center" } },
         "\u275B  Steady hands keep the fullest garden  \u275C")
@@ -73,24 +73,32 @@
     { nm: "Calathea", on: false },
   ];
 
-  function GardenSheet({ onClose }) {
+  function GardenSheet({ onClose, unlockedCount = 1 }) {
+    const unlocked = Math.max(0, Math.min(PLANTS.length, unlockedCount));
+    const waiting = PLANTS.length - unlocked;
+    const footer = unlocked + " " + (unlocked === 1 ? "plate" : "plates") +
+      " pressed \u00b7 " + waiting + " awaiting cultivation";
+
     return e(
       Sheet,
       { kicker: "Pressed Collection \u00b7 Plates I\u2013VI", title: "The Garden", onClose },
       e(
         "div",
         { className: "garden-grid" },
-        PLANTS.map((p, i) =>
+        PLANTS.map((p, i) => {
+          const isUnlocked = i < unlocked;
+          return (
           e(
             "div",
-            { key: i, className: "garden-cell" + (p.on ? "" : " locked") },
-            e("div", { className: "ph" }, e("span", null, p.on ? "Plate " + ["I", "II", "III", "IV", "V", "VI"][i] : "\u2014 locked \u2014")),
+            { key: i, className: "garden-cell" + (isUnlocked ? "" : " locked") },
+            e("div", { className: "ph" }, e("span", null, isUnlocked ? "Plate " + ["I", "II", "III", "IV", "V", "VI"][i] : "\u2014 locked \u2014")),
             e("div", { className: "nm" }, p.nm)
           )
-        )
+          );
+        })
       ),
       e("div", { style: { marginTop: "18px", fontFamily: "var(--font-mono)", fontSize: "9.5px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink-faint)", textAlign: "center" } },
-        "Three plates pressed \u00b7 three awaiting cultivation")
+        footer)
     );
   }
 
