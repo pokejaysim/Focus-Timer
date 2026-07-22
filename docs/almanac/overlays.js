@@ -22,8 +22,8 @@
       { className: "scrim", onClick: (ev) => { if (ev.target === ev.currentTarget) onClose(); } },
       e(
         "div",
-        { className: "sheet", role: "dialog", "aria-modal": "true" },
-        e("button", { className: "sheet-close", onClick: onClose, "aria-label": "Close" }, "\u2715"),
+        { className: "sheet", role: "dialog", "aria-modal": "true", "aria-label": title },
+        e("button", { type: "button", className: "sheet-close", onClick: onClose, "aria-label": "Close" }, "\u2715"),
         e(
           "div",
           { className: "sheet-head" },

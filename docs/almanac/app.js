@@ -2,7 +2,7 @@
    Static React timer with reducer state, SVG plant plate, and modal sheets. */
 (function () {
   const e = React.createElement;
-  const { useReducer, useEffect, useState } = React;
+  const { useReducer, useEffect, useRef, useState } = React;
 
   const STORAGE_KEY = "tt-almanac";
   const STORAGE_VERSION = 2;
@@ -31,6 +31,12 @@
   const STAGES = ["Seed", "Sprout", "Growing", "Mature", "Flowering"];
   const STAGE_WORD = ["One", "Two", "Three", "Four", "Five"];
   const STAGE_EVERY = 2; // focus sessions per stage
+  const COMPLETION_TONES = {
+    "Forest Morning": [[523.25, 0], [659.25, 0.24]],
+    "Quiet Rain": [[392.0, 0], [523.25, 0.28]],
+    "Library Hum": [[440.0, 0], [554.37, 0.26]],
+    "Hearth & Embers": [[329.63, 0], [493.88, 0.3]],
+  };
 
   function dateKey(date = new Date()) {
     return [
@@ -65,6 +71,68 @@
     return m + ":" + String(s).padStart(2, "0");
   }
 
+  function getAudioContext(contextRef) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!contextRef.current) contextRef.current = new AudioContextClass();
+    return contextRef.current;
+  }
+
+  function primeCompletionChime(contextRef) {
+    const context = getAudioContext(contextRef);
+    if (context && context.state === "suspended") {
+      context.resume().catch(() => {});
+    }
+  }
+
+  function playCompletionChime(sound, contextRef) {
+    const tones = COMPLETION_TONES[sound];
+    if (!tones) return;
+
+    const context = getAudioContext(contextRef);
+    if (!context) return;
+
+    const schedule = () => {
+      const start = context.currentTime + 0.03;
+      tones.forEach(([frequency, offset]) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const noteStart = start + offset;
+        const noteEnd = noteStart + 0.72;
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(frequency, noteStart);
+        gain.gain.setValueAtTime(0.0001, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.11, noteStart + 0.045);
+        gain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(noteStart);
+        oscillator.stop(noteEnd + 0.02);
+      });
+    };
+
+    if (context.state === "suspended") {
+      context.resume().then(schedule).catch(() => {});
+    } else {
+      schedule();
+    }
+  }
+
+  function showCompletionNotification() {
+    if (!("Notification" in window) || window.Notification.permission !== "granted") return;
+    try {
+      const notice = new window.Notification("Focus session complete", {
+        body: "Your tree has grown. It’s time to take a break.",
+        tag: "timer-tree-focus-complete",
+      });
+      notice.onclick = () => {
+        window.focus();
+        notice.close();
+      };
+    } catch (e) {}
+  }
+
   /* ---- timer reducer ---- */
   const dur = (phase, s) =>
     (phase === "focus" ? s.focusMin : phase === "long" ? s.longMin : s.breakMin) * 60;
@@ -74,7 +142,7 @@
     return {
       version: STORAGE_VERSION,
       focusMin: 25, breakMin: 5, longMin: 15, longEvery: 4,
-      plantKey: "heartleaf", sound: "Forest Morning",
+      plantKey: "heartleaf", sound: "Forest Morning", notificationsEnabled: false,
       phase: "focus", remaining: 25 * 60,
       sessionInRound: 0, completedFocus: 0, today: 0, todayDate: today,
       totalFocusSeconds: 0, longestFocusSeconds: 0,
@@ -96,6 +164,7 @@
       longEvery: clampNumber(raw.longEvery, 2, 8, base.longEvery),
       plantKey: PLANTS.some((p) => p.key === raw.plantKey) ? raw.plantKey : base.plantKey,
       sound: SOUNDS.includes(raw.sound) ? raw.sound : base.sound,
+      notificationsEnabled: raw.notificationsEnabled === true,
       phase,
       sessionInRound: clampNumber(raw.sessionInRound, 0, 8, base.sessionInRound),
       completedFocus: clampNumber(raw.completedFocus, 0, 100000, base.completedFocus),
@@ -233,9 +302,11 @@
         if (a.key === "longEvery") updates.longEvery = clampNumber(a.value, 2, 8, s.longEvery);
         if (a.key === "plantKey" && PLANTS.some((p) => p.key === a.value)) updates.plantKey = a.value;
         if (a.key === "sound" && SOUNDS.includes(a.value)) updates.sound = a.value;
+        if (a.key === "notificationsEnabled") updates.notificationsEnabled = a.value === true;
 
         const ns = syncToday({ ...s, ...updates });
-        if (!ns.running && ["focusMin", "breakMin", "longMin"].includes(a.key)) {
+        const durationKeyForPhase = { focus: "focusMin", break: "breakMin", long: "longMin" };
+        if (!ns.running && durationKeyForPhase[ns.phase] === a.key) {
           ns.remaining = dur(ns.phase, ns);
         }
         return ns;
@@ -255,12 +326,13 @@
       e("div", { className: "stepper" },
         e("input", {
           type: "number", value, min, max,
+          "aria-label": label,
           onChange: (ev) => onChange(clamp(parseInt(ev.target.value || "0", 10))),
         }),
         e("span", { className: "unit" }, unit),
         e("div", { style: { display: "flex", flexDirection: "column" } },
-          e("button", { className: "nudge", onClick: () => onChange(clamp(value + 1)), style: { flex: 1 } }, "\u2039".replace("\u2039", "+")),
-          e("button", { className: "nudge", onClick: () => onChange(clamp(value - 1)), style: { flex: 1, borderTop: "1px solid var(--rule)" } }, "\u2212")
+          e("button", { type: "button", className: "nudge", "aria-label": "Increase " + label, onClick: () => onChange(clamp(value + 1)), style: { flex: 1 } }, "+"),
+          e("button", { type: "button", className: "nudge", "aria-label": "Decrease " + label, onClick: () => onChange(clamp(value - 1)), style: { flex: 1, borderTop: "1px solid var(--rule)" } }, "\u2212")
         )
       )
     );
@@ -269,8 +341,35 @@
   function Select({ label, value, options, onChange, wide, getLabel }) {
     return e("div", { className: "field" + (wide ? " field-wide" : "") },
       e("label", null, label),
-      e("select", { className: "select", value, onChange: (ev) => onChange(ev.target.value) },
+      e("select", { className: "select", value, "aria-label": label, onChange: (ev) => onChange(ev.target.value) },
         options.map((o) => e("option", { key: o, value: o }, getLabel ? getLabel(o) : o))
+      )
+    );
+  }
+
+  function AlertField({ enabled, permission, onToggle }) {
+    const unavailable = permission === "unsupported";
+    const blocked = permission === "denied";
+    const buttonLabel = unavailable ? "Unavailable" : blocked ? "Blocked" : enabled ? "On" : "Enable";
+    const note = unavailable
+      ? "Desktop notifications are not supported by this browser."
+      : blocked
+        ? "Allow notifications in your browser’s site settings."
+        : enabled
+          ? "A desktop notice will accompany the completion chime."
+          : "Optional: show a desktop notice when focus ends.";
+
+    return e("div", { className: "field field-wide" },
+      e("label", null, "Desktop notification"),
+      e("div", { className: "alert-control" },
+        e("span", null, note),
+        e("button", {
+          type: "button",
+          className: "alert-toggle",
+          disabled: unavailable || blocked,
+          "aria-pressed": enabled,
+          onClick: onToggle,
+        }, buttonLabel)
       )
     );
   }
@@ -280,6 +379,12 @@
     const [s, dispatch] = useReducer(reducer, null, loadInitialState);
     const [overlay, setOverlay] = useState(null);
     const [drawer, setDrawer] = useState(false);
+    const [completionNotice, setCompletionNotice] = useState("");
+    const [notificationPermission, setNotificationPermission] = useState(() =>
+      "Notification" in window ? window.Notification.permission : "unsupported"
+    );
+    const audioContextRef = useRef(null);
+    const completedFocusRef = useRef(s.completedFocus);
 
     // persist
     useEffect(() => {
@@ -310,6 +415,50 @@
       return () => window.removeEventListener("keydown", onKeyDown);
     }, [overlay]);
 
+    useEffect(() => {
+      const refreshPermission = () => {
+        if ("Notification" in window) setNotificationPermission(window.Notification.permission);
+      };
+      window.addEventListener("focus", refreshPermission);
+      return () => window.removeEventListener("focus", refreshPermission);
+    }, []);
+
+    useEffect(() => {
+      const focusJustCompleted = s.completedFocus > completedFocusRef.current;
+      completedFocusRef.current = s.completedFocus;
+      if (!focusJustCompleted) return;
+
+      setCompletionNotice("Focus complete \u00b7 Time for a break");
+      playCompletionChime(s.sound, audioContextRef);
+      if (s.notificationsEnabled) showCompletionNotification();
+    }, [s.completedFocus]);
+
+    useEffect(() => {
+      if (!completionNotice) return;
+      const id = setTimeout(() => setCompletionNotice(""), 8000);
+      return () => clearTimeout(id);
+    }, [completionNotice]);
+
+    const desktopNoticesOn = s.notificationsEnabled && notificationPermission === "granted";
+
+    const toggleNotifications = async () => {
+      if (desktopNoticesOn) {
+        dispatch({ type: "SET", key: "notificationsEnabled", value: false });
+        return;
+      }
+      if (!("Notification" in window)) return;
+
+      try {
+        const permission = window.Notification.permission === "granted"
+          ? "granted"
+          : await window.Notification.requestPermission();
+        setNotificationPermission(permission);
+        if (permission === "granted") {
+          dispatch({ type: "SET", key: "notificationsEnabled", value: true });
+        }
+      } catch (e) {}
+    };
+
     const total = dur(s.phase, s);
     const progress = 1 - s.remaining / total;
     const plant = PLANTS.find((p) => p.key === s.plantKey) || PLANTS[0];
@@ -319,7 +468,7 @@
     const modeLabel = s.phase === "focus" ? "Focus" : s.phase === "long" ? "Long Rest" : "Short Rest";
     const displayToday = s.todayDate === dateKey() ? s.today : 0;
     const totalFocusSeconds = Math.max(0, s.totalFocusSeconds);
-    const gardenUnlockedCount = Math.max(1, Math.min(6, stageIdx + 1));
+    const gardenUnlockedCount = Math.max(1, Math.min(6, Math.floor(s.completedFocus / STAGE_EVERY) + 1));
     const stats = {
       today: displayToday,
       totalH: Math.floor(totalFocusSeconds / 3600),
@@ -353,9 +502,9 @@
             e("div", { className: "wordmark" }, "Timer Tree")
           ),
           e("nav", { className: "nav" },
-            e("button", { onClick: () => setOverlay("about") }, "About"),
-            e("button", { onClick: () => setOverlay("stats") }, "Stats"),
-            e("button", { onClick: () => setOverlay("garden") }, "Garden")
+            e("button", { type: "button", onClick: () => setOverlay("about") }, "About"),
+            e("button", { type: "button", onClick: () => setOverlay("stats") }, "Stats"),
+            e("button", { type: "button", onClick: () => setOverlay("garden") }, "Garden")
           )
         ),
         e("div", { className: "rule-row" }),
@@ -401,12 +550,22 @@
               )
             ),
             e("div", { className: "controls" },
-              e("button", { className: "btn-ghost", onClick: () => dispatch({ type: "RESET" }), title: "Reset" },
+              e("button", { type: "button", className: "btn-ghost", onClick: () => dispatch({ type: "RESET" }), title: "Reset" },
                 e("span", { className: "lab" }, "Reset")),
-              e("button", { className: "btn-primary", onClick: () => dispatch({ type: "TOGGLE" }) }, primaryLabel),
-              e("button", { className: "btn-ghost", onClick: () => dispatch({ type: "SKIP" }), title: "Skip" },
+              e("button", {
+                type: "button",
+                className: "btn-primary",
+                onClick: () => {
+                  if (!s.running && s.sound !== "Silence") primeCompletionChime(audioContextRef);
+                  dispatch({ type: "TOGGLE", now: Date.now() });
+                },
+              }, primaryLabel),
+              e("button", { type: "button", className: "btn-ghost", onClick: () => dispatch({ type: "SKIP" }), title: "Skip" },
                 e("span", { className: "lab" }, "Skip"))
-            )
+            ),
+            completionNotice
+              ? e("div", { className: "completion-notice", role: "status", "aria-live": "polite" }, completionNotice)
+              : null
           )
         ),
 
@@ -418,10 +577,11 @@
             e("span", { className: "tuck-chip" }, "Rest ", e("b", null, s.breakMin + "m")),
             e("span", { className: "tuck-chip" }, "Long ", e("b", null, s.longMin + "m")),
             e("span", { className: "tuck-chip" }, "Sound ", e("b", null, s.sound)),
-            e("button", { className: "tuck-pull", onClick: () => setDrawer((d) => !d) },
+            e("span", { className: "tuck-chip" }, "Notice ", e("b", null, desktopNoticesOn ? "On" : "Off")),
+            e("button", { type: "button", className: "tuck-pull", "aria-expanded": drawer, "aria-controls": "settings-drawer", onClick: () => setDrawer((d) => !d) },
               drawer ? "Close \u25BE" : "Adjust \u25B4")
           ),
-          e("div", { className: "drawer" + (drawer ? " open" : "") },
+          e("div", { id: "settings-drawer", className: "drawer" + (drawer ? " open" : ""), "aria-hidden": !drawer },
             e("div", { className: "drawer-inner" },
               e(Stepper, { label: "Focus", value: s.focusMin, unit: "min", min: 5, max: 90, onChange: (v) => dispatch({ type: "SET", key: "focusMin", value: v }) }),
               e(Stepper, { label: "Short rest", value: s.breakMin, unit: "min", min: 1, max: 30, onChange: (v) => dispatch({ type: "SET", key: "breakMin", value: v }) }),
@@ -431,7 +591,11 @@
                 getLabel: (key) => (PLANTS.find((p) => p.key === key) || PLANTS[0]).name,
                 onChange: (v) => dispatch({ type: "SET", key: "plantKey", value: v }) }),
               e(Select, { label: "Sound theme", wide: true, value: s.sound, options: SOUNDS,
-                onChange: (v) => dispatch({ type: "SET", key: "sound", value: v }) })
+                onChange: (v) => {
+                  dispatch({ type: "SET", key: "sound", value: v });
+                  if (v !== "Silence") primeCompletionChime(audioContextRef);
+                } }),
+              e(AlertField, { enabled: desktopNoticesOn, permission: notificationPermission, onToggle: toggleNotifications })
             )
           )
         )

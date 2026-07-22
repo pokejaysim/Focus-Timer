@@ -211,6 +211,13 @@ image-slot{
 .dial-sub{font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft);}
 
 .controls{display:flex;align-items:center;gap:14px;margin-top:22px;}
+.completion-notice{
+  margin-top:16px;padding:8px 14px;border:1px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,var(--paper));color:var(--accent-deep);
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  animation:notice-in .25s ease;
+}
+@keyframes notice-in{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 .btn-primary{
   font-family:var(--font-display);font-size:21px;color:var(--paper);
   background:var(--accent);border:1.6px solid var(--ink);
@@ -252,7 +259,7 @@ image-slot{
 .drawer{
   overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.4,0,.2,1);
 }
-.drawer.open{max-height:340px;}
+.drawer.open{max-height:440px;}
 .drawer-inner{
   padding:18px 4px 6px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px 26px;
   border-top:1px dashed var(--rule-strong);margin-top:8px;
@@ -275,6 +282,17 @@ image-slot{
   background-repeat:no-repeat;background-position:right 12px center;
 }
 .field-wide{grid-column:span 2;}
+.alert-control{
+  min-height:42px;border:1.4px solid var(--ink);background:var(--paper);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 7px 6px 12px;
+}
+.alert-control > span{font-family:var(--font-body);font-size:13px;line-height:1.2;color:var(--ink-soft);}
+.alert-toggle{
+  flex:none;min-width:76px;border:1px solid var(--ink);background:var(--paper-2);padding:6px 9px;
+  font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+}
+.alert-toggle:hover:not(:disabled){background:color-mix(in srgb,var(--ink) 8%,var(--paper));}
+.alert-toggle:disabled{cursor:not-allowed;opacity:.55;}
 
 /* ---------- overlays (Stats / Garden / About) ---------- */
 .scrim{
@@ -335,4 +353,8 @@ image-slot{
   .dial-wrap{width:84vw;height:84vw;}
   .tuck-bar .tuck-chip{display:none;}
   .btn-primary{padding:12px 30px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .completion-notice,.scrim,.sheet{animation:none;}
+  .drawer{transition:none;}
 }

@@ -9,6 +9,7 @@ Live app: [timertree.ca](http://timertree.ca/)
 - Clock-style Pomodoro timer with focus, short rest, and long rest phases
 - Botanical plate that advances through five growth stages as sessions complete
 - Tucked settings drawer for focus/rest durations, long-rest cadence, plant, and sound theme
+- Gentle completion chimes, an in-app break reminder, and optional desktop notifications
 - Almanac-style About, Stats, and Garden overlays
 - Persistent timer state through local storage
 
