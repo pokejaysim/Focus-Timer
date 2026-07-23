@@ -1,5 +1,5 @@
-/* Overlays: Stats ledger, Garden of plates, About colophon.
-   Exported to window.{StatsSheet,GardenSheet,AboutSheet}. */
+/* Overlays: Stats ledger, Garden of plates, About colophon, and timer alerts.
+   Exported to window for the main app. */
 (function () {
   const e = React.createElement;
 
@@ -16,14 +16,21 @@
     return result;
   }
 
-  function Sheet({ kicker, title, onClose, children }) {
+  function Sheet({ kicker, title, onClose, children, dismissible = true }) {
     return e(
       "div",
-      { className: "scrim", onClick: (ev) => { if (ev.target === ev.currentTarget) onClose(); } },
+      {
+        className: "scrim",
+        onClick: (ev) => {
+          if (dismissible && ev.target === ev.currentTarget && onClose) onClose();
+        },
+      },
       e(
         "div",
         { className: "sheet", role: "dialog", "aria-modal": "true", "aria-label": title },
-        e("button", { type: "button", className: "sheet-close", onClick: onClose, "aria-label": "Close" }, "\u2715"),
+        dismissible && onClose
+          ? e("button", { type: "button", className: "sheet-close", onClick: onClose, "aria-label": "Close" }, "\u2715")
+          : null,
         e(
           "div",
           { className: "sheet-head" },
@@ -116,5 +123,90 @@
     );
   }
 
-  Object.assign(window, { StatsSheet, GardenSheet, AboutSheet });
+  function AlertSetupSheet({
+    permission,
+    audioStatus,
+    onTest,
+    onEnableAndStart,
+    onSoundOnlyAndStart,
+    onClose,
+  }) {
+    const notificationBlocked = permission === "denied";
+    const notificationUnsupported = permission === "unsupported";
+    const notificationReady = permission === "granted";
+    const notificationLabel = notificationReady
+      ? "Notifications On & Start"
+      : notificationBlocked
+        ? "Notifications Blocked"
+        : notificationUnsupported
+          ? "Notifications Unavailable"
+          : "Enable Notifications & Start";
+    const audioLabel = audioStatus === "ready"
+      ? "Sound ready"
+      : audioStatus === "failed" || audioStatus === "unavailable"
+        ? "Sound needs attention"
+        : audioStatus === "muted"
+          ? "Sound muted"
+          : "Sound not yet tested";
+
+    return e(
+      Sheet,
+      { kicker: "Before Your First Sitting", title: "Prepare Your Alerts", onClose },
+      e("div", { className: "transition-copy" },
+        e("p", null, "A Pomodoro only works if you notice the transition. Test the bell now, then choose whether Timer Tree may also send a desktop notice."),
+        e("div", { className: "readiness-ledger", role: "status", "aria-live": "polite" },
+          e("div", null, e("span", null, "Completion bell"), e("b", null, audioLabel)),
+          e("div", null, e("span", null, "Desktop notice"), e("b", null,
+            notificationReady ? "Ready" : notificationBlocked ? "Blocked" : notificationUnsupported ? "Unavailable" : "Not enabled"))
+        ),
+        notificationBlocked
+          ? e("p", { className: "permission-help" }, "Notifications are blocked by the browser. Allow notifications for timertree.ca in site settings and reload, or continue with sound only.")
+          : null
+      ),
+      e("div", { className: "sheet-actions setup-actions" },
+        e("button", { type: "button", className: "sheet-action secondary", onClick: onTest }, "Test Sound"),
+        e("button", {
+          type: "button",
+          className: "sheet-action primary",
+          onClick: onEnableAndStart,
+          disabled: notificationBlocked || notificationUnsupported,
+        }, notificationLabel),
+        e("button", { type: "button", className: "sheet-action secondary", onClick: onSoundOnlyAndStart }, "Sound Only & Start")
+      )
+    );
+  }
+
+  function CompletionSheet({ completedPhase, nextPhase, onBegin, onSkip }) {
+    const focusComplete = completedPhase === "focus";
+    const longRest = nextPhase === "long";
+    const title = focusComplete ? "Time to Rest" : "Ready to Focus";
+    const kicker = focusComplete ? "Focus Complete" : "Rest Complete";
+    const copy = focusComplete
+      ? "Your session has been recorded and your tree has grown. The break timer will wait until you are ready to step away."
+      : "Your rest is complete. The next focus session will wait until you choose to begin.";
+
+    return e(
+      Sheet,
+      { kicker, title, dismissible: false },
+      e("div", { className: "transition-copy" },
+        e("div", { className: "transition-mark", "aria-hidden": "true" }, focusComplete ? "\u275B" : "\u275C"),
+        e("p", null, copy)
+      ),
+      e("div", { className: "sheet-actions" },
+        e("button", { type: "button", className: "sheet-action primary", onClick: onBegin },
+          focusComplete ? (longRest ? "Begin Long Rest" : "Begin Rest") : "Begin Focus"),
+        focusComplete && onSkip
+          ? e("button", { type: "button", className: "sheet-action secondary", onClick: onSkip }, "Skip Rest")
+          : null
+      )
+    );
+  }
+
+  Object.assign(window, {
+    StatsSheet,
+    GardenSheet,
+    AboutSheet,
+    AlertSetupSheet,
+    CompletionSheet,
+  });
 })();

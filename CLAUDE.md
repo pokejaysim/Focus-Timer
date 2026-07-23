@@ -4,60 +4,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Timer Tree is a vanilla JavaScript web application - a calming focus timer that helps users grow virtual plants as they complete focus sessions. The app is hosted on GitHub Pages with the domain `timertree.ca`.
+Timer Tree is a static React UMD web application—a calming Pomodoro timer that helps users grow virtual plants as they complete focus sessions. The app is hosted on GitHub Pages with the domain `timertree.ca`.
 
 ## Project Structure
 
-This is a simple static web application with all files located in the `/docs` directory:
-- `index.html` - Main application file with complete HTML structure
-- `script.js` - Core application logic implemented as a single `FocusTimer` class
-- `styles.css` - Complete CSS styling with responsive design and animations
+This is a simple static web application with all production files located in the `/docs` directory:
+- `index.html` - Main application shell and script loading
+- `almanac/app.js` - React components, timer reducer, persistence, and alert behavior
+- `almanac/overlays.js` - Stats, Garden, About, alert setup, and completion sheets
+- `almanac/styles.css` - Almanac visual system and responsive design
+- `almanac/dial.js` and `almanac/plant.js` - SVG visual components
 - `CNAME` - GitHub Pages custom domain configuration
 
 ## Development Commands
 
-Since this is a vanilla JavaScript project with no build system, there are no specific build, test, or lint commands. Development involves:
+There is no build step or package manager. Development involves:
 - Direct file editing
 - Testing through browser reload
-- No package manager or dependencies
+- Running timer state tests with `node --test tests/timer-core.test.cjs`
 
 ## Application Architecture
 
-### Core Class: `FocusTimer`
-The entire application is built around a single ES6 class (`FocusTimer`) that manages:
+### Timer reducer and React app
+The timer is managed by a reducer in `docs/almanac/app.js`:
 
 **Timer State Management:**
 - Uses timestamp-based timing for background resilience
-- Tracks `startTime`, `pausedTime`, `totalPausedDuration`
-- Handles pause/resume functionality properly
+- Stops at focus/rest boundaries until the user acknowledges the transition
+- Saves compatible versioned state in localStorage
 
 **Plant Growth System:**
-- 6 different plant types (classic, flower, cactus, bamboo, fruit, rose)
-- Each plant has 7 growth stages (stages 0-6)
-- Plant progress persists in localStorage
-- Growth advances on successful timer completion
+- Botanical plates advance through five growth stages
+- Growth and statistics persist in localStorage
+- Growth advances on successful focus completion
 
 **Key Features:**
-- Configurable timer duration (seconds, minutes, hours)
-- Preset time buttons (30s, 5m, 25m, 45m, 1h, 1.5h, 2h)
-- Progress tracking with visual progress bar
-- Browser notifications and audio notifications
-- Total focus time tracking (persistent in localStorage)
-- Plant selection modal with 6 plant varieties
-- Keyboard shortcuts (Ctrl/Cmd + Shift + R to reset plant progress)
+- Configurable focus, short-rest, long-rest, and cadence settings
+- Three alert levels and four bell themes plus Silence
+- Optional browser notifications and supported-device vibration
+- Persistent acknowledgement cards at focus and rest completion
+- About, Stats, and Garden sheets
 
 **State Persistence:**
-- `plantStage` - Current plant growth stage
-- `totalFocusHours` - Cumulative focus time
-- `selectedPlant` - Currently selected plant type
+- A single versioned `tt-almanac` record stores timer settings, alert preferences, progress, and statistics
 
 **Visual States:**
-- Dynamic background colors based on timer state (running/paused/completed)
-- Timer display animations and state indicators
-- Plant growth celebrations and animations
+- Almanac-inspired botanical plate and timer dial
+- Responsive desktop and mobile layouts
+- Modal sheets for setup, completion, and supporting views
 
 ### DOM Architecture
-The application uses direct DOM manipulation with element references stored as class properties. No frameworks or libraries are used - everything is vanilla JavaScript with modern ES6+ features.
+React 18 UMD renders the component tree without a build step. Shared visual components and overlay sheets are exported on `window` and composed by `almanac/app.js`.
 
 ### Styling Architecture
 CSS uses CSS custom properties (variables) for consistent theming, with a nature-inspired color palette focusing on earth tones and plant colors. Responsive design supports mobile and tablet viewports.
@@ -70,8 +67,7 @@ CSS uses CSS custom properties (variables) for consistent theming, with a nature
 
 ## Technical Notes
 
-- The timer system is resilient to background tab switching and uses `visibilitychange` events
-- Audio notifications use Web Audio API with graceful fallback
+- The timer system catches up from wall-clock timestamps but deliberately pauses at each phase boundary
+- Audio notifications use Web Audio API and are primed from explicit user actions
 - Browser notifications require user permission
-- All animations use CSS keyframes for performance
 - localStorage is used for all persistent data
